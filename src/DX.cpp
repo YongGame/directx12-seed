@@ -7,8 +7,6 @@ void DX::Update()
 
 void DX::Render()
 {
-	HRESULT hr;
-
 	UpdatePipeline(); // update the pipeline by sending commands to the commandqueue
 
 					  // create an array of command lists (only one command list here)
@@ -20,22 +18,19 @@ void DX::Render()
 	// this command goes in at the end of our command queue. we will know when our command queue 
 	// has finished because the fence value will be set to "fenceValue" from the GPU since the command
 	// queue is being executed on the GPU
-	hr = commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]);
+	ThrowIfFailed(commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]));
 
 	// present the current backbuffer
-	hr = swapChain->Present(0, 0);
+	ThrowIfFailed(swapChain->Present(0, 0));
 }
 
 void DX::UpdatePipeline()
 {
-	HRESULT hr;
-
 	// We have to wait for the gpu to finish with the command allocator before we reset it
 	WaitForPreviousFrame();
 
-	hr = commandAllocator[frameIndex]->Reset();
-
-	hr = commandList->Reset(commandAllocator[frameIndex], NULL);
+	ThrowIfFailed(commandAllocator[frameIndex]->Reset());
+	ThrowIfFailed(commandList->Reset(commandAllocator[frameIndex], NULL));
 
 	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
 
@@ -56,7 +51,7 @@ void DX::UpdatePipeline()
 	// warning if present is called on the render target when it's not in the present state
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-	hr = commandList->Close();
+	ThrowIfFailed(commandList->Close());
 }
 
 void DX::WaitForPreviousFrame()
@@ -69,7 +64,7 @@ void DX::WaitForPreviousFrame()
 	if (fence[frameIndex]->GetCompletedValue() < fenceValue[frameIndex])
 	{
 		// we have the fence create an event which is signaled once the fence's current value is "fenceValue"
-		fence[frameIndex]->SetEventOnCompletion(fenceValue[frameIndex], fenceEvent);
+		ThrowIfFailed(fence[frameIndex]->SetEventOnCompletion(fenceValue[frameIndex], fenceEvent));
 
 		// We will wait until the fence has triggered the event that it's current value has reached "fenceValue". once it's value
 		// has reached "fenceValue", we know the command queue has finished executing
@@ -84,24 +79,15 @@ void DX::WaitForPreviousFrame()
 
 bool DX::init(HWND hwnd, int w, int h, bool fullScene)
 {
-    HRESULT hr;
-
 	// -- Create the Device -- //
 
 	IDXGIFactory4* dxgiFactory;
-	hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
-	if (FAILED(hr))
-	{
-		return false;
-	}
+	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
 
 	IDXGIAdapter1* adapter; // adapters are the graphics card (this includes the embedded graphics on the motherboard)
-
 	int adapterIndex = 0; // we'll start looking for directx 12  compatible graphics devices starting at index 0
-
 	bool adapterFound = false; // set this to true when a good one was found
-
-							   // find first hardware gpu that supports d3d 12
+	// find first hardware gpu that supports d3d 12
 	while (dxgiFactory->EnumAdapters1(adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
 	{
 		DXGI_ADAPTER_DESC1 desc;
@@ -114,8 +100,7 @@ bool DX::init(HWND hwnd, int w, int h, bool fullScene)
 		}
 
 		// we want a device that is compatible with direct3d 12 (feature level 11 or higher)
-		hr = D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr);
-		if (SUCCEEDED(hr))
+		if(SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
 		{
 			adapterFound = true;
 			break;
@@ -124,21 +109,13 @@ bool DX::init(HWND hwnd, int w, int h, bool fullScene)
 		adapterIndex++;
 	}
 
-	if (!adapterFound)
+	if(!adapterFound)
 	{
 		return false;
 	}
 
 	// Create the device
-	hr = D3D12CreateDevice(
-		adapter,
-		D3D_FEATURE_LEVEL_11_0,
-		IID_PPV_ARGS(&device)
-		);
-	if (FAILED(hr))
-	{
-		return false;
-	}
+	ThrowIfFailed(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)));
 
     // -- Create a direct command queue -- //
 
@@ -146,11 +123,7 @@ bool DX::init(HWND hwnd, int w, int h, bool fullScene)
 	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT; // direct means the gpu can directly execute this command queue
 
-	hr = device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&commandQueue)); // create the command queue
-	if (FAILED(hr))
-	{
-		return false;
-	}
+	ThrowIfFailed(device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&commandQueue))); // create the command queue
 
 	// -- Create the Swap Chain (double/tripple buffering) -- //
 
@@ -175,11 +148,11 @@ bool DX::init(HWND hwnd, int w, int h, bool fullScene)
 
 	IDXGISwapChain* tempSwapChain;
 
-	dxgiFactory->CreateSwapChain(
+	ThrowIfFailed(dxgiFactory->CreateSwapChain(
 		commandQueue, // the queue will be flushed once the swap chain is created
 		&swapChainDesc, // give it the swap chain description we created above
 		&tempSwapChain // store the created swap chain in a temp IDXGISwapChain interface
-	);
+	));
 
 	swapChain = static_cast<IDXGISwapChain3*>(tempSwapChain);
 
@@ -195,11 +168,7 @@ bool DX::init(HWND hwnd, int w, int h, bool fullScene)
 													   // This heap will not be directly referenced by the shaders (not shader visible), as this will store the output from the pipeline
 													   // otherwise we would set the heap's flag to D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	hr = device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvDescriptorHeap));
-	if (FAILED(hr))
-	{
-		return false;
-	}
+	ThrowIfFailed(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvDescriptorHeap)));
 
 	// get the size of a descriptor in this heap (this is a rtv heap, so only rtv descriptors should be stored in it.
 	// descriptor sizes may vary from device to device, which is why there is no set size and we must ask the 
@@ -215,11 +184,7 @@ bool DX::init(HWND hwnd, int w, int h, bool fullScene)
 	{
 		// first we get the n'th buffer in the swap chain and store it in the n'th
 		// position of our ID3D12Resource array
-		hr = swapChain->GetBuffer(i, IID_PPV_ARGS(&renderTargets[i]));
-		if (FAILED(hr))
-		{
-			return false;
-		}
+		ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&renderTargets[i])));
 
 		// the we "create" a render target view which binds the swap chain buffer (ID3D12Resource[n]) to the rtv handle
 		device->CreateRenderTargetView(renderTargets[i], nullptr, rtvHandle);
@@ -232,35 +197,23 @@ bool DX::init(HWND hwnd, int w, int h, bool fullScene)
 
 	for (int i = 0; i < frameBufferCount; i++)
 	{
-		hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator[i]));
-		if (FAILED(hr))
-		{
-			return false;
-		}
+		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator[i])));
 	}
 
 	// -- Create a Command List -- //
 
 	// create the command list with the first allocator
-	hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator[0], NULL, IID_PPV_ARGS(&commandList));
-	if (FAILED(hr))
-	{
-		return false;
-	}
+	ThrowIfFailed(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator[0], NULL, IID_PPV_ARGS(&commandList)));
 
 	// command lists are created in the recording state. our main loop will set it up for recording again so close it now
-	commandList->Close();
+	ThrowIfFailed(commandList->Close());
 
 	// -- Create a Fence & Fence Event -- //
 
 	// create the fences
 	for (int i = 0; i < frameBufferCount; i++)
 	{
-		hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence[i]));
-		if (FAILED(hr))
-		{
-			return false;
-		}
+		ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence[i])));
 		fenceValue[i] = 0; // set the initial fence value to 0
 	}
 
@@ -268,7 +221,7 @@ bool DX::init(HWND hwnd, int w, int h, bool fullScene)
 	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	if (fenceEvent == nullptr)
 	{
-		return false;
+		ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
 	}
 
 	return true;
