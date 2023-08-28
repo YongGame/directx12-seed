@@ -13,6 +13,7 @@ public:
     const static int frameBufferCount = 3;
     int rtvDescriptorSize;
 
+    IDXGIFactory4* dxgiFactory;
     ID3D12Device* device;
     IDXGISwapChain3* swapChain;
     ID3D12CommandQueue* commandQueue;
@@ -28,10 +29,17 @@ public:
 
     
 
-    bool init(HWND hwnd, int w, int h, bool fullScene);
+    void init(HWND hwnd, int w, int h, bool fullScene);
     void Update();
     void Render();
     void UpdatePipeline();
     void WaitForPreviousFrame();
 
+private:
+    void createDevice();
+    void createQueue();
+    void createSwapChain(HWND hwnd, int w, int h, bool fullScene);
+	void createRTV();
+	void createCmdList();
+	void createFence();
 };

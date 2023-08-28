@@ -1,5 +1,17 @@
 #include "dx.h"
 
+void DX::init(HWND hwnd, int w, int h, bool fullScene)
+{
+	createDevice();
+	createQueue();
+	createSwapChain(hwnd, w, h, fullScene);
+	createRTV();
+	createCmdList();
+	createFence();
+
+	//frameIndex = swapChain->GetCurrentBackBufferIndex();
+}
+
 void DX::Update()
 {
 
@@ -73,94 +85,42 @@ void DX::WaitForPreviousFrame()
 
 	// increment fenceValue for next frame
 	fenceValue[frameIndex]++;
-
-	
 }
 
-bool DX::init(HWND hwnd, int w, int h, bool fullScene)
+void DX::createFence()
 {
-	// -- Create the Device -- //
-
-	IDXGIFactory4* dxgiFactory;
-	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
-
-	IDXGIAdapter1* adapter; // adapters are the graphics card (this includes the embedded graphics on the motherboard)
-	int adapterIndex = 0; // we'll start looking for directx 12  compatible graphics devices starting at index 0
-	bool adapterFound = false; // set this to true when a good one was found
-	// find first hardware gpu that supports d3d 12
-	while (dxgiFactory->EnumAdapters1(adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
+	for (int i = 0; i < frameBufferCount; i++)
 	{
-		DXGI_ADAPTER_DESC1 desc;
-		adapter->GetDesc1(&desc);
-
-		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
-		{
-			// we dont want a software device
-			continue;
-		}
-
-		// we want a device that is compatible with direct3d 12 (feature level 11 or higher)
-		if(SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
-		{
-			adapterFound = true;
-			break;
-		}
-
-		adapterIndex++;
+		ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence[i])));
+		fenceValue[i] = 0; // set the initial fence value to 0
 	}
 
-	if(!adapterFound)
+	// create a handle to a fence event
+	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (fenceEvent == nullptr)
 	{
-		return false;
+		ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+	}
+}
+
+void DX::createCmdList()
+{
+	for (int i = 0; i < frameBufferCount; i++)
+	{
+		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator[i])));
 	}
 
-	// Create the device
-	ThrowIfFailed(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)));
+	// -- Create a Command List -- //
 
-    // -- Create a direct command queue -- //
+	// create the command list with the first allocator
+	ThrowIfFailed(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator[0], NULL, IID_PPV_ARGS(&commandList)));
 
-	D3D12_COMMAND_QUEUE_DESC cqDesc = {};
-	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT; // direct means the gpu can directly execute this command queue
+	// command lists are created in the recording state. our main loop will set it up for recording again so close it now
+	ThrowIfFailed(commandList->Close());
+}
 
-	ThrowIfFailed(device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&commandQueue))); // create the command queue
-
-	// -- Create the Swap Chain (double/tripple buffering) -- //
-
-	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
-	backBufferDesc.Width = w; // buffer width
-	backBufferDesc.Height = h; // buffer height
-	backBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the buffer (rgba 32 bits, 8 bits for each chanel)
-
-														// describe our multi-sampling. We are not multi-sampling, so we set the count to 1 (we need at least one sample of course)
-	DXGI_SAMPLE_DESC sampleDesc = {};
-	sampleDesc.Count = 1; // multisample count (no multisampling, so we just put 1, since we still need 1 sample)
-
-						  // Describe and create the swap chain.
-	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
-	swapChainDesc.BufferCount = frameBufferCount; // number of buffers we have
-	swapChainDesc.BufferDesc = backBufferDesc; // our back buffer description
-	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // this says the pipeline will render to this swap chain
-	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // dxgi will discard the buffer (data) after we call present
-	swapChainDesc.OutputWindow = hwnd; // handle to our window
-	swapChainDesc.SampleDesc = sampleDesc; // our multi-sampling description
-	swapChainDesc.Windowed = !fullScene; // set to true, then if in fullscreen must call SetFullScreenState with true for full screen to get uncapped fps
-
-	IDXGISwapChain* tempSwapChain;
-
-	ThrowIfFailed(dxgiFactory->CreateSwapChain(
-		commandQueue, // the queue will be flushed once the swap chain is created
-		&swapChainDesc, // give it the swap chain description we created above
-		&tempSwapChain // store the created swap chain in a temp IDXGISwapChain interface
-	));
-
-	swapChain = static_cast<IDXGISwapChain3*>(tempSwapChain);
-
-	frameIndex = swapChain->GetCurrentBackBufferIndex();
-
-	// -- Create the Back Buffers (render target views) Descriptor Heap -- //
-
-	// describe an rtv descriptor heap and create
+void DX::createRTV()
+{
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
 	rtvHeapDesc.NumDescriptors = frameBufferCount; // number of descriptors for this heap.
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV; // this heap is a render target view heap
@@ -192,37 +152,80 @@ bool DX::init(HWND hwnd, int w, int h, bool fullScene)
 		// we increment the rtv handle by the rtv descriptor size we got above
 		rtvHandle.Offset(1, rtvDescriptorSize);
 	}
+}
 
-	// -- Create the Command Allocators -- //
+void DX::createSwapChain(HWND hwnd, int w, int h, bool fullScene)
+{
+	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
+	backBufferDesc.Width = w; // buffer width
+	backBufferDesc.Height = h; // buffer height
+	backBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the buffer (rgba 32 bits, 8 bits for each chanel)
 
-	for (int i = 0; i < frameBufferCount; i++)
+	// describe our multi-sampling. We are not multi-sampling, so we set the count to 1 (we need at least one sample of course)
+	DXGI_SAMPLE_DESC sampleDesc = {};
+	sampleDesc.Count = 1; // multisample count (no multisampling, so we just put 1, since we still need 1 sample)
+
+	// Describe and create the swap chain.
+	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
+	swapChainDesc.BufferCount = frameBufferCount; // number of buffers we have
+	swapChainDesc.BufferDesc = backBufferDesc; // our back buffer description
+	swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // this says the pipeline will render to this swap chain
+	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD; // dxgi will discard the buffer (data) after we call present
+	swapChainDesc.OutputWindow = hwnd; // handle to our window
+	swapChainDesc.SampleDesc = sampleDesc; // our multi-sampling description
+	swapChainDesc.Windowed = !fullScene; // set to true, then if in fullscreen must call SetFullScreenState with true for full screen to get uncapped fps
+
+	IDXGISwapChain* tempSwapChain;
+
+	ThrowIfFailed(dxgiFactory->CreateSwapChain(
+		commandQueue, // the queue will be flushed once the swap chain is created
+		&swapChainDesc, // give it the swap chain description we created above
+		&tempSwapChain // store the created swap chain in a temp IDXGISwapChain interface
+	));
+
+	swapChain = static_cast<IDXGISwapChain3*>(tempSwapChain);
+}
+
+void DX::createQueue()
+{
+	D3D12_COMMAND_QUEUE_DESC cqDesc = {};
+	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT; // direct means the gpu can directly execute this command queue
+
+	ThrowIfFailed(device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&commandQueue))); // create the command queue
+}
+
+void DX::createDevice()
+{
+	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
+
+	IDXGIAdapter1* adapter; // adapters are the graphics card (this includes the embedded graphics on the motherboard)
+	int adapterIndex = 0; // we'll start looking for directx 12  compatible graphics devices starting at index 0
+	bool adapterFound = false; // set this to true when a good one was found
+	// find first hardware gpu that supports d3d 12
+	while (dxgiFactory->EnumAdapters1(adapterIndex, &adapter) != DXGI_ERROR_NOT_FOUND)
 	{
-		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator[i])));
+		DXGI_ADAPTER_DESC1 desc;
+		adapter->GetDesc1(&desc);
+
+		if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+		{
+			// we dont want a software device
+			continue;
+		}
+
+		// we want a device that is compatible with direct3d 12 (feature level 11 or higher)
+		if(SUCCEEDED(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+		{
+			adapterFound = true;
+			break;
+		}
+
+		adapterIndex++;
 	}
 
-	// -- Create a Command List -- //
-
-	// create the command list with the first allocator
-	ThrowIfFailed(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator[0], NULL, IID_PPV_ARGS(&commandList)));
-
-	// command lists are created in the recording state. our main loop will set it up for recording again so close it now
-	ThrowIfFailed(commandList->Close());
-
-	// -- Create a Fence & Fence Event -- //
-
-	// create the fences
-	for (int i = 0; i < frameBufferCount; i++)
+	if(adapterFound)
 	{
-		ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence[i])));
-		fenceValue[i] = 0; // set the initial fence value to 0
+		ThrowIfFailed(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)));
 	}
-
-	// create a handle to a fence event
-	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	if (fenceEvent == nullptr)
-	{
-		ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
-	}
-
-	return true;
 }

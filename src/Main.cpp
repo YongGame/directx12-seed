@@ -13,12 +13,7 @@ int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
 		return 1;
 	}
 
-	if(!dx.init(hwnd, Width, Height, FullScreen))
-	{
-		MessageBox(0, L"Window Initialization - Failed",
-			L"Error", MB_OK);
-		return 1;
-	}
+	dx.init(hwnd, Width, Height, FullScreen);
 
 	// start the main loop
 	mainloop();
