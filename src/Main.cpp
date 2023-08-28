@@ -109,8 +109,8 @@ void mainloop() {
 		}
 		else {
 			// run game code
-			//Update(); // update the game logic
-			//Render(); // execute the command queue (rendering the scene is the result of the gpu executing the command lists)
+			dx.Update(); // update the game logic
+			dx.Render(); // execute the command queue (rendering the scene is the result of the gpu executing the command lists)
 		}
 	}
 }

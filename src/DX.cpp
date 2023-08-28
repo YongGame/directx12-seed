@@ -1,5 +1,87 @@
 #include "dx.h"
 
+void DX::Update()
+{
+
+}
+
+void DX::Render()
+{
+	HRESULT hr;
+
+	UpdatePipeline(); // update the pipeline by sending commands to the commandqueue
+
+					  // create an array of command lists (only one command list here)
+	ID3D12CommandList* ppCommandLists[] = { commandList };
+
+	// execute the array of command lists
+	commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+	// this command goes in at the end of our command queue. we will know when our command queue 
+	// has finished because the fence value will be set to "fenceValue" from the GPU since the command
+	// queue is being executed on the GPU
+	hr = commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]);
+
+	// present the current backbuffer
+	hr = swapChain->Present(0, 0);
+}
+
+void DX::UpdatePipeline()
+{
+	HRESULT hr;
+
+	// We have to wait for the gpu to finish with the command allocator before we reset it
+	WaitForPreviousFrame();
+
+	hr = commandAllocator[frameIndex]->Reset();
+
+	hr = commandList->Reset(commandAllocator[frameIndex], NULL);
+
+	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
+
+	// transition the "frameIndex" render target from the present state to the render target state so the command list draws to it starting from here
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+
+	// here we again get the handle to our current render target view so we can set it as the render target in the output merger stage of the pipeline
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), frameIndex, rtvDescriptorSize);
+
+	// set the render target for the output merger stage (the output of the pipeline)
+	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+
+	// Clear the render target by using the ClearRenderTargetView command
+	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
+	// warning if present is called on the render target when it's not in the present state
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+	hr = commandList->Close();
+}
+
+void DX::WaitForPreviousFrame()
+{
+	// swap the current rtv buffer index so we draw on the correct buffer
+	frameIndex = swapChain->GetCurrentBackBufferIndex();
+
+	// if the current fence value is still less than "fenceValue", then we know the GPU has not finished executing
+	// the command queue since it has not reached the "commandQueue->Signal(fence, fenceValue)" command
+	if (fence[frameIndex]->GetCompletedValue() < fenceValue[frameIndex])
+	{
+		// we have the fence create an event which is signaled once the fence's current value is "fenceValue"
+		fence[frameIndex]->SetEventOnCompletion(fenceValue[frameIndex], fenceEvent);
+
+		// We will wait until the fence has triggered the event that it's current value has reached "fenceValue". once it's value
+		// has reached "fenceValue", we know the command queue has finished executing
+		WaitForSingleObject(fenceEvent, INFINITE);
+	}
+
+	// increment fenceValue for next frame
+	fenceValue[frameIndex]++;
+
+	
+}
+
 bool DX::init(HWND hwnd, int w, int h, bool fullScene)
 {
     HRESULT hr;

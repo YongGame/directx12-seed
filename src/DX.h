@@ -11,7 +11,7 @@ public:
     int frameIndex;
     const static int frameBufferCount = 3;
     int rtvDescriptorSize;
-    
+
     ID3D12Device* device;
     IDXGISwapChain3* swapChain;
     ID3D12CommandQueue* commandQueue;
@@ -28,5 +28,9 @@ public:
     
 
     bool init(HWND hwnd, int w, int h, bool fullScene);
+    void Update();
+    void Render();
+    void UpdatePipeline();
+    void WaitForPreviousFrame();
 
 };
