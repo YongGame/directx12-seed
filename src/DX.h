@@ -8,8 +8,25 @@
 
 class DX{
 public:
-    ID3D12Device* device;
+    int frameIndex;
+    const static int frameBufferCount = 3;
+    int rtvDescriptorSize;
     
-    bool init();
+    ID3D12Device* device;
+    IDXGISwapChain3* swapChain;
+    ID3D12CommandQueue* commandQueue;
+    ID3D12GraphicsCommandList* commandList;
+
+    ID3D12DescriptorHeap* rtvDescriptorHeap;
+    ID3D12Resource* renderTargets[frameBufferCount];
+    ID3D12CommandAllocator* commandAllocator[frameBufferCount];
+    ID3D12Fence* fence[frameBufferCount];
+    HANDLE fenceEvent;
+    UINT64 fenceValue[frameBufferCount];
+
+
+    
+
+    bool init(HWND hwnd, int w, int h, bool fullScene);
 
 };

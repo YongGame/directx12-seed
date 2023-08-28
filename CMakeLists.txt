@@ -34,13 +34,6 @@ add_definitions(-DUNICODE -D_UNICODE)  # 使用 unicode 字符集
 
 # Options
 
-set(XGFX_API DIRECTX12 CACHE STRING "Which graphics API to use, defaults to AUTO, can be NOOP, VULKAN, OPENGL, DIRECTX12, or METAL.")
-set_property(
-    CACHE
-    XGFX_API PROPERTY
-    STRINGS DIRECTX12
-)
-
 # =============================================================
 
 # Dependencies
@@ -96,6 +89,8 @@ target_include_directories(
   PUBLIC external/dx12
 )
 
+# add_dependencies 必须在 add_executable 之后，可以在 target_link_libraries 之前或之后。
+# 在编译主程序时会检测依赖项，依赖项编译完之后才会编译主程序。这里会先编译glm，再编译主程序。
 add_dependencies(
     ${PROJECT_NAME}
     glm_static
