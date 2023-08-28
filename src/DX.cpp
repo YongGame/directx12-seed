@@ -1,4 +1,5 @@
 #include "dx.h"
+#include "Sample.h"
 
 void DX::init(HWND hwnd, int w, int h, bool fullScene)
 {
@@ -125,8 +126,8 @@ void DX::createRTV()
 	rtvHeapDesc.NumDescriptors = frameBufferCount; // number of descriptors for this heap.
 	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV; // this heap is a render target view heap
 
-													   // This heap will not be directly referenced by the shaders (not shader visible), as this will store the output from the pipeline
-													   // otherwise we would set the heap's flag to D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
+	// This heap will not be directly referenced by the shaders (not shader visible), as this will store the output from the pipeline
+	// otherwise we would set the heap's flag to D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	ThrowIfFailed(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvDescriptorHeap)));
 

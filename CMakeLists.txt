@@ -52,6 +52,8 @@ file(GLOB_RECURSE FILE_SOURCES RELATIVE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/samples/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/samples/*.h
 )
 
 # Solution Filters

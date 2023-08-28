@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+#include "samples/Traingle.h"
+
 int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
 	HINSTANCE hPrevInstance,
 	LPSTR lpCmdLine,
@@ -12,6 +14,8 @@ int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
 			L"Error", MB_OK);
 		return 1;
 	}
+
+	dx.sample = new Traingle();
 
 	dx.init(hwnd, Width, Height, FullScreen);
 

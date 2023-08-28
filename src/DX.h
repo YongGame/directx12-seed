@@ -7,8 +7,12 @@
 #include "d3dx12.h"
 #include "Help.h"
 
+class Sample;
+
 class DX{
 public:
+    Sample* sample;
+    
     int frameIndex;
     const static int frameBufferCount = 3;
     int rtvDescriptorSize;
