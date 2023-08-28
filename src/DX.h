@@ -34,6 +34,7 @@ public:
     void Render();
     void UpdatePipeline();
     void WaitForPreviousFrame();
+    void destory();
 
 private:
     void createDevice();

@@ -229,3 +229,31 @@ void DX::createDevice()
 		ThrowIfFailed(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)));
 	}
 }
+
+void DX::destory()
+{
+	// wait for the gpu to finish all frames
+    for (int i = 0; i < frameBufferCount; ++i)
+    {
+        frameIndex = i;
+        WaitForPreviousFrame();
+    }
+    
+    // get swapchain out of full screen before exiting
+    BOOL fs = false;
+    if (swapChain->GetFullscreenState(&fs, NULL))
+        swapChain->SetFullscreenState(false, NULL);
+
+    SAFE_RELEASE(device);
+    SAFE_RELEASE(swapChain);
+    SAFE_RELEASE(commandQueue);
+    SAFE_RELEASE(rtvDescriptorHeap);
+    SAFE_RELEASE(commandList);
+
+    for (int i = 0; i < frameBufferCount; ++i)
+    {
+        SAFE_RELEASE(renderTargets[i]);
+        SAFE_RELEASE(commandAllocator[i]);
+        SAFE_RELEASE(fence[i]);
+    };
+}

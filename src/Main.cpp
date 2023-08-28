@@ -18,6 +18,8 @@ int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
 	// start the main loop
 	mainloop();
 
+	//dx.destory();
+
 	return 0;
 }
 
