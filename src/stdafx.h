@@ -7,6 +7,8 @@
 #include <windows.h>
 #include <string>
 
+#include "DX.h"
+
 // Handle to the window
 HWND hwnd = NULL;
 
@@ -39,3 +41,5 @@ LRESULT CALLBACK WndProc(HWND hWnd,
 	UINT msg,
 	WPARAM wParam,
 	LPARAM lParam);
+
+DX dx;

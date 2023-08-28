@@ -45,15 +45,6 @@ set_property(
 
 # Dependencies
 
-# CrossWindow
-message(STATUS "Installing crosswindow via submodule")
-#add_subdirectory(external/crosswindow)
-#set_property(TARGET CrossWindow PROPERTY FOLDER "Dependencies")
-
-# CrossWindow-Graphics
-message(STATUS "Installing crosswindow-graphics via submodule")
-#add_subdirectory(external/crosswindow-graphics)
-
 # GLM
 message(STATUS "Installing glm via submodule")
 set(BUILD_STATIC_LIBS ON)
@@ -93,22 +84,21 @@ add_executable(
 
 target_link_libraries(
     ${PROJECT_NAME}
-    #CrossWindowGraphics
-    #CrossWindow
+    PUBLIC d3d12.lib
+    PUBLIC dxgi.lib
+    PUBLIC dxguid.lib
     glm_static
 )
 
 target_include_directories(
   ${PROJECT_NAME}
   PUBLIC external/glm
+  PUBLIC external/dx12
 )
 
 add_dependencies(
     ${PROJECT_NAME}
-    #CrossWindowGraphics
-    #CrossWindow
     glm_static
-    
 )
 
 target_compile_definitions(

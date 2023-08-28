@@ -13,6 +13,13 @@ int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
 		return 1;
 	}
 
+	if(!dx.init())
+	{
+		MessageBox(0, L"Window Initialization - Failed",
+			L"Error", MB_OK);
+		return 1;
+	}
+
 	// start the main loop
 	mainloop();
 
