@@ -3,12 +3,12 @@
 
 void DX::init(HWND hwnd, int w, int h, bool fullScene)
 {
-	createDevice();
-	createQueue();
-	createSwapChain(hwnd, w, h, fullScene);
-	createRTV();
-	createCmdList();
-	createFence();
+	initDevice();
+	initQueue();
+	initSwapChain(hwnd, w, h, fullScene);
+	initRTV();
+	initCmdList();
+	initFence();
 
 	// Fill out the Viewport
     viewport.TopLeftX = 0;
@@ -108,7 +108,7 @@ void DX::WaitForPreviousFrame()
 	fenceValue[frameIndex]++;
 }
 
-void DX::createFence()
+void DX::initFence()
 {
 	for (int i = 0; i < frameBufferCount; i++)
 	{
@@ -124,7 +124,7 @@ void DX::createFence()
 	}
 }
 
-void DX::createCmdList()
+void DX::initCmdList()
 {
 	for (int i = 0; i < frameBufferCount; i++)
 	{
@@ -140,7 +140,7 @@ void DX::createCmdList()
 	//ThrowIfFailed(commandList->Close());
 }
 
-void DX::createRTV()
+void DX::initRTV()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
 	rtvHeapDesc.NumDescriptors = frameBufferCount; // number of descriptors for this heap.
@@ -175,7 +175,7 @@ void DX::createRTV()
 	}
 }
 
-void DX::createSwapChain(HWND hwnd, int w, int h, bool fullScene)
+void DX::initSwapChain(HWND hwnd, int w, int h, bool fullScene)
 {
 	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
 	backBufferDesc.Width = w; // buffer width
@@ -208,7 +208,7 @@ void DX::createSwapChain(HWND hwnd, int w, int h, bool fullScene)
 	frameIndex = swapChain->GetCurrentBackBufferIndex();
 }
 
-void DX::createQueue()
+void DX::initQueue()
 {
 	D3D12_COMMAND_QUEUE_DESC cqDesc = {};
 	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
@@ -217,7 +217,7 @@ void DX::createQueue()
 	ThrowIfFailed(device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&commandQueue))); // create the command queue
 }
 
-void DX::createDevice()
+void DX::initDevice()
 {
 	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
 
@@ -318,6 +318,13 @@ D3D12_VERTEX_BUFFER_VIEW DX::createVertexBuffer(int vBufferSize, int strideInByt
 
 D3D12_SHADER_BYTECODE DX::createShader(LPCWSTR pFileName, LPCSTR pTarget)
 {
+	// when debugging, we can compile the shader files at runtime.
+    // but for release versions, we can compile the hlsl shaders
+    // with fxc.exe to create .cso files, which contain the shader
+    // bytecode. We can load the .cso files at runtime to get the
+    // shader bytecode, which of course is faster than compiling
+    // them at runtime
+	
 	// compile vertex shader
     ID3DBlob* shader; // d3d blob for holding vertex shader bytecode
     ID3DBlob* errorBuff; // a buffer holding the error data if any
