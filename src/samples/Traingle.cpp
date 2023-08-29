@@ -62,20 +62,28 @@ void Traingle::init()
     ThrowIfFailed(dx->device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateObject)));
 
     // Create vertex buffer
-    // a triangle
     Vertex vList[] = {
         { 0.0f, 0.5f, 0.5f,   1.0f, 0.0f, 0.0f, 1.0f },
         { 0.5f, -0.5f, 0.5f,  0.0f, 1.0f, 0.0f, 1.0f },
         { -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f }
     };
-    vertexBufferView = dx->createVertexBuffer(sizeof(vList), sizeof(Vertex), reinterpret_cast<BYTE*>(vList));
-
     Vertex vList2[] = {
-        { 0.0f, 1.0f, 0.6f,   1.0f, 0.0f, 0.0f, 1.0f },
-        { 0.5f, 0.0f, 0.6f,   1.0f, 0.0f, 0.0f, 1.0f },
-        { -0.5f, -0.0f, 0.6f, 1.0f, 0.0f, 0.0f, 1.0f }
+        { -0.7f, 0.2f, 0.6f,    1.0f, 0.0f, 0.0f, 1.0f },
+        { 0.7f, 0.2f, 0.6f,     1.0f, 0.0f, 0.0f, 1.0f },
+        { 0.7f, -0.2f, 0.6f,    1.0f, 0.0f, 0.0f, 1.0f }, 
+        { -0.7f, -0.2f, 0.6f,   1.0f, 0.0f, 0.0f, 1.0f } 
     };
+    DWORD iList2[] = {
+        0, 1, 2, // first triangle
+        0, 2, 3 // second triangle
+    };
+    // triangle
+    vertexBufferView = dx->createVertexBuffer(sizeof(vList), sizeof(Vertex), reinterpret_cast<BYTE*>(vList));
+    // quad
     vertexBufferView2 = dx->createVertexBuffer(sizeof(vList2), sizeof(Vertex), reinterpret_cast<BYTE*>(vList2));
+    indexBufferView2 = dx->createIndexBuffer(sizeof(iList2), reinterpret_cast<BYTE*>(iList2));
+
+    dx->uploadBuffer();
 }
 
 void Traingle::Update()
@@ -93,5 +101,6 @@ void Traingle::UpdatePipeline()
     commandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
 
     commandList->IASetVertexBuffers(0, 1, &vertexBufferView2); // set the vertex buffer (using the vertex buffer view)
-    commandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
+    commandList->IASetIndexBuffer(&indexBufferView2);
+    commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // finally draw 3 vertices (draw the triangle)
 }

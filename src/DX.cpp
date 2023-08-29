@@ -137,7 +137,7 @@ void DX::initCmdList()
 	ThrowIfFailed(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator[0], NULL, IID_PPV_ARGS(&commandList)));
 
 	// command lists are created in the recording state. our main loop will set it up for recording again so close it now
-	ThrowIfFailed(commandList->Close());
+	//ThrowIfFailed(commandList->Close());
 }
 
 void DX::initRTV()
@@ -252,11 +252,60 @@ void DX::initDevice()
 	}
 }
 
+D3D12_INDEX_BUFFER_VIEW DX::createIndexBuffer(int iBufferSize, const void * pData)
+{
+	ID3D12Resource* indexBuffer; // a default buffer in GPU memory that we will load index data for our triangle into
+	D3D12_INDEX_BUFFER_VIEW indexBufferView; // a structure holding information about the index buffer
+
+	// create default heap to hold index buffer
+	device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
+		D3D12_HEAP_FLAG_NONE, // no flags
+		&CD3DX12_RESOURCE_DESC::Buffer(iBufferSize), // resource description for a buffer
+		D3D12_RESOURCE_STATE_COPY_DEST, // start in the copy destination state
+		nullptr, // optimized clear value must be null for this type of resource
+		IID_PPV_ARGS(&indexBuffer));
+
+	// we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
+	indexBuffer->SetName(L"Index Buffer Resource Heap");
+
+	// create upload heap to upload index buffer
+	ID3D12Resource* iBufferUploadHeap;
+	device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // upload heap
+		D3D12_HEAP_FLAG_NONE, // no flags
+		&CD3DX12_RESOURCE_DESC::Buffer(iBufferSize), // resource description for a buffer
+		D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
+		nullptr,
+		IID_PPV_ARGS(&iBufferUploadHeap));
+	iBufferUploadHeap->SetName(L"Index Buffer Upload Resource Heap");
+
+	// store vertex buffer in upload heap
+	D3D12_SUBRESOURCE_DATA indexData = {};
+	indexData.pData = pData; // pointer to our index array
+	indexData.RowPitch = iBufferSize; // size of all our index buffer
+	indexData.SlicePitch = iBufferSize; // also the size of our index buffer
+
+	// we are now creating a command with the command list to copy the data from
+	// the upload heap to the default heap
+	UpdateSubresources(commandList, indexBuffer, iBufferUploadHeap, 0, 0, 1, &indexData);
+
+	// transition the vertex buffer data from copy destination state to vertex buffer state
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(indexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
+
+	// create a vertex buffer view for the triangle. We get the GPU memory address to the vertex pointer using the GetGPUVirtualAddress() method
+	indexBufferView.BufferLocation = indexBuffer->GetGPUVirtualAddress();
+	indexBufferView.Format = DXGI_FORMAT_R32_UINT; // 32-bit unsigned integer (this is what a dword is, double word, a word is 2 bytes)
+	indexBufferView.SizeInBytes = iBufferSize;
+
+	return indexBufferView;
+}
+
 D3D12_VERTEX_BUFFER_VIEW DX::createVertexBuffer(int vBufferSize, int strideInBytes, const void * pData)
 {
-	WaitForPreviousFrame();
-	ThrowIfFailed(commandAllocator[frameIndex]->Reset());
-	ThrowIfFailed(commandList->Reset(commandAllocator[frameIndex], NULL));
+	//WaitForPreviousFrame();
+	//ThrowIfFailed(commandAllocator[frameIndex]->Reset());
+	//ThrowIfFailed(commandList->Reset(commandAllocator[frameIndex], NULL));
 
 	ID3D12Resource* vertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
@@ -303,21 +352,24 @@ D3D12_VERTEX_BUFFER_VIEW DX::createVertexBuffer(int vBufferSize, int strideInByt
     // transition the vertex buffer data from copy destination state to vertex buffer state
     commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
-    // Now we execute the command list to upload the initial assets (triangle data)
-    commandList->Close();
-    ID3D12CommandList* ppCommandLists[] = { commandList };
-    commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-    // increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
-    //fenceValue[frameIndex]++;
-    ThrowIfFailed(commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]));
-
     // create a vertex buffer view for the triangle. We get the GPU memory address to the vertex pointer using the GetGPUVirtualAddress() method
     vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
     vertexBufferView.StrideInBytes = strideInBytes;
     vertexBufferView.SizeInBytes = vBufferSize;
 
 	return vertexBufferView;
+}
+
+void DX::uploadBuffer()
+{
+	// Now we execute the command list to upload the initial assets (triangle data)
+    commandList->Close();
+    ID3D12CommandList* ppCommandLists[] = { commandList };
+    commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
+
+    // increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
+    fenceValue[frameIndex]++;
+    ThrowIfFailed(commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]));
 }
 
 D3D12_SHADER_BYTECODE DX::createShader(LPCWSTR pFileName, LPCSTR pTarget)
