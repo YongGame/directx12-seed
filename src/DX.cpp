@@ -137,7 +137,7 @@ void DX::initCmdList()
 	ThrowIfFailed(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator[0], NULL, IID_PPV_ARGS(&commandList)));
 
 	// command lists are created in the recording state. our main loop will set it up for recording again so close it now
-	//ThrowIfFailed(commandList->Close());
+	ThrowIfFailed(commandList->Close());
 }
 
 void DX::initRTV()
@@ -254,6 +254,10 @@ void DX::initDevice()
 
 D3D12_VERTEX_BUFFER_VIEW DX::createVertexBuffer(int vBufferSize, int strideInBytes, const void * pData)
 {
+	WaitForPreviousFrame();
+	ThrowIfFailed(commandAllocator[frameIndex]->Reset());
+	ThrowIfFailed(commandList->Reset(commandAllocator[frameIndex], NULL));
+
 	ID3D12Resource* vertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
 
@@ -305,7 +309,7 @@ D3D12_VERTEX_BUFFER_VIEW DX::createVertexBuffer(int vBufferSize, int strideInByt
     commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
     // increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
-    fenceValue[frameIndex]++;
+    //fenceValue[frameIndex]++;
     ThrowIfFailed(commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]));
 
     // create a vertex buffer view for the triangle. We get the GPU memory address to the vertex pointer using the GetGPUVirtualAddress() method

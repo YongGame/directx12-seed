@@ -23,8 +23,10 @@ void Traingle::init()
     // create input layout
     D3D12_INPUT_ELEMENT_DESC inputLayout[] =
     {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
+
     // fill out an input layout description structure
     D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
     // we can get the number of elements in an array by "sizeof(array) / sizeof(arrayElementType)"
@@ -62,11 +64,18 @@ void Traingle::init()
     // Create vertex buffer
     // a triangle
     Vertex vList[] = {
-        { { 0.0f, 0.5f, 0.5f } },
-        { { 0.5f, -0.5f, 0.5f } },
-        { { -0.5f, -0.5f, 0.5f } },
+        { 0.0f, 0.5f, 0.5f,   1.0f, 0.0f, 0.0f, 1.0f },
+        { 0.5f, -0.5f, 0.5f,  0.0f, 1.0f, 0.0f, 1.0f },
+        { -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f }
     };
     vertexBufferView = dx->createVertexBuffer(sizeof(vList), sizeof(Vertex), reinterpret_cast<BYTE*>(vList));
+
+    Vertex vList2[] = {
+        { 0.0f, 1.0f, 0.6f,   1.0f, 0.0f, 0.0f, 1.0f },
+        { 0.5f, 0.0f, 0.6f,   1.0f, 0.0f, 0.0f, 1.0f },
+        { -0.5f, -0.0f, 0.6f, 1.0f, 0.0f, 0.0f, 1.0f }
+    };
+    vertexBufferView2 = dx->createVertexBuffer(sizeof(vList2), sizeof(Vertex), reinterpret_cast<BYTE*>(vList2));
 }
 
 void Traingle::Update()
@@ -79,6 +88,10 @@ void Traingle::UpdatePipeline()
     auto commandList = dx->commandList;
     commandList->SetPipelineState(pipelineStateObject);
     commandList->SetGraphicsRootSignature(rootSignature); // set the root signature
+
     commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // set the vertex buffer (using the vertex buffer view)
+    commandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
+
+    commandList->IASetVertexBuffers(0, 1, &vertexBufferView2); // set the vertex buffer (using the vertex buffer view)
     commandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
 }
