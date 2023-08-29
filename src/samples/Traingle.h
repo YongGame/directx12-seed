@@ -38,6 +38,8 @@ public:
     virtual void Update();
     virtual void UpdatePipeline();
 
+    void initRootSignature();
     void initPSO();
     void initMesh();
+    void initCBV();
 };

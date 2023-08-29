@@ -9,11 +9,13 @@ Traingle::Traingle(DX &dx_ref)
 
 void Traingle::init()
 {
+    initRootSignature();
     initPSO();
     initMesh();
+    initCBV();
 }
 
-void Traingle::initPSO()
+void Traingle::initRootSignature()
 {
     // create root signature
     // create a descriptor range (descriptor table) and fill it out
@@ -50,7 +52,10 @@ void Traingle::initPSO()
     ID3DBlob* signature;
     ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr));
     ThrowIfFailed(dx->device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
+}
 
+void Traingle::initPSO()
+{
     // create vertex and pixel shaders
     D3D12_SHADER_BYTECODE vertexShaderBytecode = dx->createShader(L"D://cc/directx12-seed/assets/VertexShader.hlsl", "vs_5_0");
     D3D12_SHADER_BYTECODE pixelShaderBytecode = dx->createShader(L"D://cc/directx12-seed/assets/PixelShader.hlsl", "ps_5_0");
@@ -96,8 +101,10 @@ void Traingle::initPSO()
 
     // create the pso
     ThrowIfFailed(dx->device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateObject)));
+}
 
-
+void Traingle::initCBV()
+{
     // Create a constant buffer descriptor heap for each frame
     // this is the descriptor heap that will store our constant buffer descriptor
     for (int i = 0; i < dx->frameBufferCount; ++i)
