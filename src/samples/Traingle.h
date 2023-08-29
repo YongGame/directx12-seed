@@ -25,8 +25,7 @@ public:
     virtual void init();
     virtual void Update();
     virtual void UpdatePipeline();
-
-    void initRootSignature();
+    
     void initPSO();
     void initMesh();
 };

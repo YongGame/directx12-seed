@@ -9,12 +9,11 @@ Traingle::Traingle(DX &dx_ref)
 
 void Traingle::init()
 {
-    initRootSignature();
     initPSO();
     initMesh();
 }
 
-void Traingle::initRootSignature()
+void Traingle::initPSO()
 {
     // create root signature
     CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
@@ -22,10 +21,7 @@ void Traingle::initRootSignature()
     ID3DBlob* signature;
     ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr));
     ThrowIfFailed(dx->device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
-}
 
-void Traingle::initPSO()
-{
     // create vertex and pixel shaders
     D3D12_SHADER_BYTECODE vertexShaderBytecode = dx->createShader(L"D://cc/directx12-seed/assets/VertexShader.hlsl", "vs_5_0");
     D3D12_SHADER_BYTECODE pixelShaderBytecode = dx->createShader(L"D://cc/directx12-seed/assets/PixelShader.hlsl", "ps_5_0");
