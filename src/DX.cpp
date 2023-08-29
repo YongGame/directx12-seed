@@ -10,6 +10,8 @@ void DX::init(HWND hwnd, int w, int h, bool fullScene)
 	createCmdList();
 	createFence();
 
+	frameIndex = swapChain->GetCurrentBackBufferIndex();
+
 	// Fill out the Viewport
     viewport.TopLeftX = 0;
     viewport.TopLeftY = 0;
@@ -25,12 +27,12 @@ void DX::init(HWND hwnd, int w, int h, bool fullScene)
     scissorRect.bottom = h;
 
 	sample->init();
-	//frameIndex = swapChain->GetCurrentBackBufferIndex();
+	
 }
 
 void DX::Update()
 {
-
+	sample->Update();
 }
 
 void DX::Render()
@@ -58,7 +60,7 @@ void DX::UpdatePipeline()
 	WaitForPreviousFrame();
 
 	ThrowIfFailed(commandAllocator[frameIndex]->Reset());
-	ThrowIfFailed(commandList->Reset(commandAllocator[frameIndex], NULL));
+	ThrowIfFailed(commandList->Reset(commandAllocator[frameIndex], pipelineStateObject));
 
 	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
 
@@ -74,6 +76,12 @@ void DX::UpdatePipeline()
 	// Clear the render target by using the ClearRenderTargetView command
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+	commandList->RSSetViewports(1, &viewport); // set the viewports
+    commandList->RSSetScissorRects(1, &scissorRect); // set the scissor rects
+    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology
+
+	sample->UpdatePipeline();
 
 	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
 	// warning if present is called on the render target when it's not in the present state
@@ -132,7 +140,7 @@ void DX::createCmdList()
 	ThrowIfFailed(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator[0], NULL, IID_PPV_ARGS(&commandList)));
 
 	// command lists are created in the recording state. our main loop will set it up for recording again so close it now
-	ThrowIfFailed(commandList->Close());
+	//ThrowIfFailed(commandList->Close());
 }
 
 void DX::createRTV()

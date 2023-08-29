@@ -33,6 +33,8 @@ public:
     D3D12_VIEWPORT viewport;
     D3D12_RECT scissorRect;
     DXGI_SAMPLE_DESC sampleDesc{};
+
+    ID3D12PipelineState* pipelineStateObject;
     
 
     void init(HWND hwnd, int w, int h, bool fullScene);

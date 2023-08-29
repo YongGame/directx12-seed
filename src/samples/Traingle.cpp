@@ -77,7 +77,7 @@ void Traingle::init()
     psoDesc.NumRenderTargets = 1; // we are only binding one render target
 
     // create the pso
-    ThrowIfFailed(dx->device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateObject)));
+    ThrowIfFailed(dx->device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&dx->pipelineStateObject)));
 
     // Create vertex buffer
 
@@ -98,5 +98,7 @@ void Traingle::Update()
 
 void Traingle::UpdatePipeline()
 {
-    
+    dx->commandList->SetGraphicsRootSignature(rootSignature); // set the root signature
+    dx->commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // set the vertex buffer (using the vertex buffer view)
+    dx->commandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
 }

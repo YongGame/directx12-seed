@@ -11,7 +11,7 @@ struct Vertex {
 class Traingle : public Sample
 {
 public:
-    ID3D12PipelineState* pipelineStateObject;
+    
     ID3D12RootSignature* rootSignature;
 
     
