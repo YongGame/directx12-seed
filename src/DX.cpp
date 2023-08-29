@@ -10,8 +10,6 @@ void DX::init(HWND hwnd, int w, int h, bool fullScene)
 	createCmdList();
 	createFence();
 
-	frameIndex = swapChain->GetCurrentBackBufferIndex();
-
 	// Fill out the Viewport
     viewport.TopLeftX = 0;
     viewport.TopLeftY = 0;
@@ -27,7 +25,6 @@ void DX::init(HWND hwnd, int w, int h, bool fullScene)
     scissorRect.bottom = h;
 
 	sample->init();
-	
 }
 
 void DX::Update()
@@ -60,7 +57,7 @@ void DX::UpdatePipeline()
 	WaitForPreviousFrame();
 
 	ThrowIfFailed(commandAllocator[frameIndex]->Reset());
-	ThrowIfFailed(commandList->Reset(commandAllocator[frameIndex], pipelineStateObject));
+	ThrowIfFailed(commandList->Reset(commandAllocator[frameIndex], NULL));
 
 	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
 
@@ -80,7 +77,7 @@ void DX::UpdatePipeline()
 	commandList->RSSetViewports(1, &viewport); // set the viewports
     commandList->RSSetScissorRects(1, &scissorRect); // set the scissor rects
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology
-
+	
 	sample->UpdatePipeline();
 
 	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
@@ -207,6 +204,8 @@ void DX::createSwapChain(HWND hwnd, int w, int h, bool fullScene)
 	));
 
 	swapChain = static_cast<IDXGISwapChain3*>(tempSwapChain);
+
+	frameIndex = swapChain->GetCurrentBackBufferIndex();
 }
 
 void DX::createQueue()
