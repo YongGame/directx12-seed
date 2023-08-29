@@ -17,7 +17,7 @@ public:
     ID3D12RootSignature* rootSignature;
     
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
-    
+
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView2;
     D3D12_INDEX_BUFFER_VIEW indexBufferView2; // a structure holding information about the index buffer
 
@@ -25,4 +25,8 @@ public:
     virtual void init();
     virtual void Update();
     virtual void UpdatePipeline();
+
+    void initRootSignature();
+    void initPSO();
+    void initMesh();
 };

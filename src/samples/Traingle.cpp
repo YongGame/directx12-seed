@@ -9,13 +9,23 @@ Traingle::Traingle(DX &dx_ref)
 
 void Traingle::init()
 {
+    initRootSignature();
+    initPSO();
+    initMesh();
+}
+
+void Traingle::initRootSignature()
+{
     // create root signature
     CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
     rootSignatureDesc.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
     ID3DBlob* signature;
     ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr));
     ThrowIfFailed(dx->device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
+}
 
+void Traingle::initPSO()
+{
     // create vertex and pixel shaders
     D3D12_SHADER_BYTECODE vertexShaderBytecode = dx->createShader(L"D://cc/directx12-seed/assets/VertexShader.hlsl", "vs_5_0");
     D3D12_SHADER_BYTECODE pixelShaderBytecode = dx->createShader(L"D://cc/directx12-seed/assets/PixelShader.hlsl", "ps_5_0");
@@ -32,7 +42,6 @@ void Traingle::init()
     // we can get the number of elements in an array by "sizeof(array) / sizeof(arrayElementType)"
     inputLayoutDesc.NumElements = sizeof(inputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC);
     inputLayoutDesc.pInputElementDescs = inputLayout;
-
 
     // create a pipeline state object (PSO)
 
@@ -60,7 +69,10 @@ void Traingle::init()
     psoDesc.NumRenderTargets = 1; // we are only binding one render target
     // create the pso
     ThrowIfFailed(dx->device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateObject)));
+}
 
+void Traingle::initMesh()
+{
     // Create vertex buffer
     Vertex vList[] = {
         { 0.0f, 0.5f, 0.5f,   1.0f, 0.0f, 0.0f, 1.0f },
