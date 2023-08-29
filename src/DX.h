@@ -22,6 +22,9 @@ public:
     int rtvDescriptorSize;
     ID3D12DescriptorHeap* rtvDescriptorHeap;
 
+    ID3D12Resource* depthStencilBuffer; // This is the memory for our depth buffer. it will also be used for a stencil buffer in a later tutorial
+    ID3D12DescriptorHeap* dsDescriptorHeap; // This is a heap for our depth/stencil buffer descriptor
+
     int frameIndex;
     const static int frameBufferCount = 3;
     ID3D12Resource* renderTargets[frameBufferCount];
@@ -53,6 +56,7 @@ private:
     void initQueue();
     void initSwapChain(HWND hwnd, int w, int h, bool fullScene);
 	void initRTV();
+    void initDSV(int w, int h);
 	void initCmdList();
 	void initFence();
 };
