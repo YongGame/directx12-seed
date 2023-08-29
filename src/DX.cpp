@@ -10,6 +10,21 @@ void DX::init(HWND hwnd, int w, int h, bool fullScene)
 	createCmdList();
 	createFence();
 
+	// Fill out the Viewport
+    viewport.TopLeftX = 0;
+    viewport.TopLeftY = 0;
+    viewport.Width = w;
+    viewport.Height = h;
+    viewport.MinDepth = 0.0f;
+    viewport.MaxDepth = 1.0f;
+
+    // Fill out a scissor rect
+    scissorRect.left = 0;
+    scissorRect.top = 0;
+    scissorRect.right = w;
+    scissorRect.bottom = h;
+
+	sample->init();
 	//frameIndex = swapChain->GetCurrentBackBufferIndex();
 }
 
@@ -163,7 +178,6 @@ void DX::createSwapChain(HWND hwnd, int w, int h, bool fullScene)
 	backBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the buffer (rgba 32 bits, 8 bits for each chanel)
 
 	// describe our multi-sampling. We are not multi-sampling, so we set the count to 1 (we need at least one sample of course)
-	DXGI_SAMPLE_DESC sampleDesc = {};
 	sampleDesc.Count = 1; // multisample count (no multisampling, so we just put 1, since we still need 1 sample)
 
 	// Describe and create the swap chain.

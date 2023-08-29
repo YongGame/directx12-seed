@@ -47,13 +47,11 @@ set_property(TARGET glm_static PROPERTY FOLDER "Dependencies")
 # =============================================================
 
 # Sources
-
+include_directories (src)
 file(GLOB_RECURSE FILE_SOURCES RELATIVE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/samples/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/samples/*.h
 )
 
 # Solution Filters
@@ -82,6 +80,7 @@ target_link_libraries(
     PUBLIC d3d12.lib
     PUBLIC dxgi.lib
     PUBLIC dxguid.lib
+    PUBLIC d3dcompiler.lib
     glm_static
 )
 
