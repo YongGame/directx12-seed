@@ -42,6 +42,8 @@ public:
     void WaitForPreviousFrame();
     void destory();
 
+    D3D12_SHADER_BYTECODE createShader(LPCWSTR pFileName, LPCSTR pTarget);
+    D3D12_VERTEX_BUFFER_VIEW createVertexBuffer(int vBufferSize, int strideInBytes, const void * pData);
 private:
     void createDevice();
     void createQueue();

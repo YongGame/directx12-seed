@@ -2,8 +2,6 @@
 
 #include <filesystem>
 
-using std::filesystem::current_path;
-
 Traingle::Traingle(DX &dx_ref)
 {
     dx = &dx_ref;
@@ -30,42 +28,10 @@ void Traingle::init()
     // shader bytecode, which of course is faster than compiling
     // them at runtime
 
-    auto path = current_path(); // L"D:\\cc\\directx12-seed\\build\\bin"
-    // compile vertex shader
-    ID3DBlob* vertexShader; // d3d blob for holding vertex shader bytecode
-    ID3DBlob* errorBuff; // a buffer holding the error data if any
-    ThrowIfFailed(D3DCompileFromFile(L"D://cc/directx12-seed/assets/VertexShader.hlsl",
-        nullptr,
-        nullptr,
-        "main",
-        "vs_5_0",
-        D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
-        0,
-        &vertexShader,
-        &errorBuff));
+    
 
-    // fill out a shader bytecode structure, which is basically just a pointer
-    // to the shader bytecode and the size of the shader bytecode
-    D3D12_SHADER_BYTECODE vertexShaderBytecode = {};
-    vertexShaderBytecode.BytecodeLength = vertexShader->GetBufferSize();
-    vertexShaderBytecode.pShaderBytecode = vertexShader->GetBufferPointer();
-
-    // compile pixel shader
-    ID3DBlob* pixelShader;
-    ThrowIfFailed(D3DCompileFromFile(L"D://cc/directx12-seed/assets/PixelShader.hlsl",
-        nullptr,
-        nullptr,
-        "main",
-        "ps_5_0",
-        D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
-        0,
-        &pixelShader,
-        &errorBuff));
-
-    // fill out shader bytecode structure for pixel shader
-    D3D12_SHADER_BYTECODE pixelShaderBytecode = {};
-    pixelShaderBytecode.BytecodeLength = pixelShader->GetBufferSize();
-    pixelShaderBytecode.pShaderBytecode = pixelShader->GetBufferPointer();
+    D3D12_SHADER_BYTECODE vertexShaderBytecode = dx->createShader(L"D://cc/directx12-seed/assets/VertexShader.hlsl", "vs_5_0");
+    D3D12_SHADER_BYTECODE pixelShaderBytecode = dx->createShader(L"D://cc/directx12-seed/assets/PixelShader.hlsl", "ps_5_0");
 
     // create input layout
 
@@ -122,63 +88,7 @@ void Traingle::init()
         { { -0.5f, -0.5f, 0.5f } },
     };
 
-    int vBufferSize = sizeof(vList);
-
-    // create default heap
-    // default heap is memory on the GPU. Only the GPU has access to this memory
-    // To get data into this heap, we will have to upload the data using
-    // an upload heap
-    dx->device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT), // a default heap
-        D3D12_HEAP_FLAG_NONE, // no flags
-        &CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
-        D3D12_RESOURCE_STATE_COPY_DEST, // we will start this heap in the copy destination state since we will copy data
-                                        // from the upload heap to this heap
-        nullptr, // optimized clear value must be null for this type of resource. used for render targets and depth/stencil buffers
-        IID_PPV_ARGS(&vertexBuffer));
-
-    // we can give resource heaps a name so when we debug with the graphics debugger we know what resource we are looking at
-    vertexBuffer->SetName(L"Vertex Buffer Resource Heap");
-
-    // create upload heap
-    // upload heaps are used to upload data to the GPU. CPU can write to it, GPU can read from it
-    // We will upload the vertex buffer using this heap to the default heap
-    ID3D12Resource* vBufferUploadHeap;
-    dx->device->CreateCommittedResource(
-        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // upload heap
-        D3D12_HEAP_FLAG_NONE, // no flags
-        &CD3DX12_RESOURCE_DESC::Buffer(vBufferSize), // resource description for a buffer
-        D3D12_RESOURCE_STATE_GENERIC_READ, // GPU will read from this buffer and copy its contents to the default heap
-        nullptr,
-        IID_PPV_ARGS(&vBufferUploadHeap));
-    vBufferUploadHeap->SetName(L"Vertex Buffer Upload Resource Heap");
-
-    // store vertex buffer in upload heap
-    D3D12_SUBRESOURCE_DATA vertexData = {};
-    vertexData.pData = reinterpret_cast<BYTE*>(vList); // pointer to our vertex array
-    vertexData.RowPitch = vBufferSize; // size of all our triangle vertex data
-    vertexData.SlicePitch = vBufferSize; // also the size of our triangle vertex data
-
-    // we are now creating a command with the command list to copy the data from
-    // the upload heap to the default heap
-    UpdateSubresources(dx->commandList, vertexBuffer, vBufferUploadHeap, 0, 0, 1, &vertexData);
-
-    // transition the vertex buffer data from copy destination state to vertex buffer state
-    dx->commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(vertexBuffer, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
-
-    // Now we execute the command list to upload the initial assets (triangle data)
-    dx->commandList->Close();
-    ID3D12CommandList* ppCommandLists[] = { dx->commandList };
-    dx->commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-    // increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
-    dx->fenceValue[dx->frameIndex]++;
-    ThrowIfFailed(dx->commandQueue->Signal(dx->fence[dx->frameIndex], dx->fenceValue[dx->frameIndex]));
-
-    // create a vertex buffer view for the triangle. We get the GPU memory address to the vertex pointer using the GetGPUVirtualAddress() method
-    vertexBufferView.BufferLocation = vertexBuffer->GetGPUVirtualAddress();
-    vertexBufferView.StrideInBytes = sizeof(Vertex);
-    vertexBufferView.SizeInBytes = vBufferSize;
+    vertexBufferView = dx->createVertexBuffer(sizeof(vList), sizeof(Vertex), reinterpret_cast<BYTE*>(vList));
 }
 
 void Traingle::Update()
