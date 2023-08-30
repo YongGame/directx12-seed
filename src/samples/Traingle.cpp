@@ -21,47 +21,91 @@ void Traingle::init()
 void Traingle::initRootSignature()
 {
     // create root signature
-    // create a descriptor range (descriptor table) and fill it out
-    // this is a range of descriptors inside a descriptor heap
-    D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1]; // only one range right now
-    descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV; // this is a range of constant buffer views (descriptors)
-    descriptorTableRanges[0].NumDescriptors = 1; // we only have one constant buffer, so the range is only 1
-    descriptorTableRanges[0].BaseShaderRegister = 0; // start index of the shader registers in the range   [b0]
-    descriptorTableRanges[0].RegisterSpace = 0; // space 0. can usually be zero
-    descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // this appends the range to the end of the root signature descriptor tables
-    
-    // create a descriptor table 
-    D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
-    descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges); // we only have one range
-    descriptorTable.pDescriptorRanges = &descriptorTableRanges[0]; // the pointer to the beginning of our ranges array
-
-    // create a root descriptor, which explains where to find the data for this root parameter
-    D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
-    rootCBVDescriptor.RegisterSpace = 0;
-    rootCBVDescriptor.ShaderRegister = 1; // [b1]
-
     // create a root parameter and fill it out
-    D3D12_ROOT_PARAMETER  rootParameters[2]; // only one parameter right now
-    rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // this is a descriptor table
-    rootParameters[0].DescriptorTable = descriptorTable; // this is our descriptor table for this root parameter
-    rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
-    rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
-    rootParameters[1].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
-    rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
+    D3D12_ROOT_PARAMETER  rootParameters[3];
+
+    // colorMultiplier   每帧更新，frameBufferCount个描述符堆和资源  【b0】
+    {
+        D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1]; // only one range right now
+        descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV; // this is a range of constant buffer views (descriptors)
+        descriptorTableRanges[0].NumDescriptors = 1; // we only have one constant buffer, so the range is only 1
+        descriptorTableRanges[0].BaseShaderRegister = 0; // start index of the shader registers in the range   【b0】
+        descriptorTableRanges[0].RegisterSpace = 0; // space 0. can usually be zero
+        descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // this appends the range to the end of the root signature descriptor tables
+
+        // create a descriptor table 
+        D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+        descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges); // we only have one range
+        descriptorTable.pDescriptorRanges = &descriptorTableRanges[0]; // the pointer to the beginning of our ranges array
+
+        rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // this is a descriptor table
+        rootParameters[0].DescriptorTable = descriptorTable; // this is our descriptor table for this root parameter
+        rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
+    }
+
+    // mvp   每帧更新， frameBufferCount个资源，不使用描述符 【b1】
+    {
+        // create a root descriptor, which explains where to find the data for this root parameter
+        D3D12_ROOT_DESCRIPTOR rootCBVDescriptor;
+        rootCBVDescriptor.RegisterSpace = 0;
+        rootCBVDescriptor.ShaderRegister = 1; // 【b1】
+
+        rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV; // this is a constant buffer view root descriptor
+        rootParameters[1].Descriptor = rootCBVDescriptor; // this is the root descriptor for this root parameter
+        rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX; // our pixel shader will be the only shader accessing this parameter for now
+    }
+
+    // 纹理  静态，就一个  【t0】 
+    {
+        D3D12_DESCRIPTOR_RANGE  descriptorTableRanges[1];
+        descriptorTableRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV; // this is a range of shader resource views (descriptors)
+        descriptorTableRanges[0].NumDescriptors = 1; // we only have one texture right now, so the range is only 1
+        descriptorTableRanges[0].BaseShaderRegister = 0; // start index of the shader registers in the range 【t0】
+        descriptorTableRanges[0].RegisterSpace = 0; // space 0. can usually be zero
+        descriptorTableRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND; // this appends the range to the end of the root signature descriptor tables
+
+        // create a descriptor table 
+        D3D12_ROOT_DESCRIPTOR_TABLE descriptorTable;
+        descriptorTable.NumDescriptorRanges = _countof(descriptorTableRanges); // we only have one range
+        descriptorTable.pDescriptorRanges = &descriptorTableRanges[0]; // the pointer to the beginning of our ranges array
+
+        // fill out the parameter for our descriptor table. Remember it's a good idea to sort parameters by frequency of change. Our constant
+        // buffer will be changed multiple times per frame, while our descriptor table will not be changed at all (in this tutorial)
+        rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE; // this is a descriptor table
+        rootParameters[2].DescriptorTable = descriptorTable; // this is our descriptor table for this root parameter
+        rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL; // our pixel shader will be the only shader accessing this parameter for now
+    }
+
+    // 一个静态采样器  【s0】
+	D3D12_STATIC_SAMPLER_DESC sampler = {};
+	sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
+	sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.MipLODBias = 0;
+	sampler.MaxAnisotropy = 0;
+	sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+	sampler.MinLOD = 0.0f;
+	sampler.MaxLOD = D3D12_FLOAT32_MAX;
+	sampler.ShaderRegister = 0;
+	sampler.RegisterSpace = 0;
+	sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+    
 
     CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
     rootSignatureDesc.Init(_countof(rootParameters), // we have 1 root parameter
         rootParameters, // a pointer to the beginning of our root parameters array
-        0,
-        nullptr,
+        1,
+        &sampler, //【s0】
         D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | // we can deny shader stages here for better performance
         D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS |
         D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
-        D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
-        D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS);
+        D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
 
+    ID3DBlob* errorBuff; // a buffer holding the error data if any
     ID3DBlob* signature;
-    ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, nullptr));
+    ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &errorBuff));
     ThrowIfFailed(dx->device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
 }
 
@@ -75,7 +119,8 @@ void Traingle::initPSO()
     D3D12_INPUT_ELEMENT_DESC inputLayout[] =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
 
     // fill out an input layout description structure
@@ -223,15 +268,15 @@ void Traingle::initMesh()
 {
     // Create vertex buffer
     Vertex vList[] = {
-        { 0.0f, 0.5f, 0.0f,   1.0f, 0.0f, 0.0f, 1.0f },
-        { 0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f, 1.0f },
-        { -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f }
+        { 0.0f, 0.5f, 0.0f,     0.5f, 0.0f,   1.0f, 0.0f, 0.0f, 1.0f },
+        { 0.5f, -0.5f, 0.0f,    0.0f, 1.0f,   0.0f, 1.0f, 0.0f, 1.0f },
+        { -0.5f, -0.5f, 0.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f, 1.0f }
     };
     Vertex vList2[] = {
-        { -1.0f, 1.0f, 1.0f,    1.0f, 0.0f, 0.0f, 1.0f },
-        { 1.0f, 1.0f, 1.0f,     1.0f, 0.0f, 0.0f, 1.0f },
-        { 1.0f, -1.0f, 1.0f,    1.0f, 0.0f, 0.0f, 1.0f }, 
-        { -1.0f, -1.0f, 1.0f,   1.0f, 0.0f, 0.0f, 1.0f } 
+        { -1.0f, 1.0f, 1.0f,    0.0f, 0.0f,     1.0f, 0.0f, 0.0f, 1.0f },
+        { 1.0f, 1.0f, 1.0f,     1.0f, 0.0f,     1.0f, 0.0f, 0.0f, 1.0f },
+        { 1.0f, -1.0f, 1.0f,    1.0f, 1.0f,     1.0f, 0.0f, 0.0f, 1.0f }, 
+        { -1.0f, -1.0f, 1.0f,   0.0f, 1.0f,     1.0f, 0.0f, 0.0f, 1.0f } 
     };
     DWORD iList2[] = {
         0, 1, 2, // first triangle
@@ -342,15 +387,20 @@ void Traingle::UpdatePipeline()
 {
     auto commandList = dx->commandList;
     commandList->SetPipelineState(pipelineStateObject);
-    commandList->SetGraphicsRootSignature(rootSignature); // set the root signature
 
-    // set constant buffer descriptor heap
-    ID3D12DescriptorHeap* descriptorHeaps[] = { mainDescriptorHeap[dx->frameIndex] };
+    // 设定相关的描述符堆
+    // 在某个时刻，某种类型的描述符堆只能有一个被使用。切换描述符堆后，之前设置的描述符堆都会失效，
+    // 而且一些硬件为了保证此时GPU没有在引用旧的描述符堆，可能会让GPU等待，这会导致性能问题，所以应该尽量避免经常调用SetDescriptorHeaps切换描述符堆。
+    ID3D12DescriptorHeap* descriptorHeaps[] = { mainDescriptorHeap[dx->frameIndex], tex->mainDescriptorHeap };
     commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
-    // set the root descriptor table 0 to the constant buffer descriptor heap
-    commandList->SetGraphicsRootDescriptorTable(0, mainDescriptorHeap[dx->frameIndex]->GetGPUDescriptorHandleForHeapStart());
 
-    // mvp
+    // 设置根描述符
+    commandList->SetGraphicsRootSignature(rootSignature); 
+    // 根描述符参数0
+    commandList->SetGraphicsRootDescriptorTable(0, mainDescriptorHeap[dx->frameIndex]->GetGPUDescriptorHandleForHeapStart());
+    // 根描述符参数2
+    commandList->SetGraphicsRootDescriptorTable(2, tex->mainDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+    // 根描述符参数1，没有创建描述符堆， mvp
     commandList->SetGraphicsRootConstantBufferView(1, constantBufferUploadHeaps[dx->frameIndex]->GetGPUVirtualAddress());
 
     // draw

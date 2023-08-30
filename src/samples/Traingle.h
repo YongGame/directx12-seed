@@ -17,8 +17,9 @@ struct ConstantBufferPerObject {
 };
 
 struct Vertex {
-    Vertex(float x, float y, float z, float r, float g, float b, float a) : pos(x,y,z), color(r,g,b,a) {}
+    Vertex(float x, float y, float z, float u, float v, float r, float g, float b, float a) : pos(x,y,z), uv(u,v), color(r,g,b,a) {}
     XMFLOAT3 pos;
+    XMFLOAT2 uv;
     XMFLOAT4 color;
 };
 
