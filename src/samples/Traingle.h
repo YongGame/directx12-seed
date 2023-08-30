@@ -34,8 +34,11 @@ public:
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView2;
     D3D12_INDEX_BUFFER_VIEW indexBufferView2; // a structure holding information about the index buffer
 
+    
+    int CBV_SRV_UAV_DescriptorSize;
+    ID3D12DescriptorHeap* CBV_SRV_UAV_DescriptorHeap; 
+
     // frameBufferCount = 3
-    ID3D12DescriptorHeap* mainDescriptorHeap[3]; // this heap will store the descripor to our constant buffer
     ID3D12Resource* constantBufferUploadHeap[3]; // this is the memory on the gpu where our constant buffer will be placed.
     UINT8* cbColorMultiplierGPUAddress[3]; // this is a pointer to the memory location we get when we map our constant buffer
     ConstantBuffer cbColorMultiplierData; // this is the constant buffer data we will send to the gpu 

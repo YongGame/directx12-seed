@@ -14,9 +14,8 @@ public:
     BYTE* imageData;
     ID3D12Resource* textureBuffer; // the resource heap containing our texture
     ID3D12Resource* textureBufferUploadHeap;
-    ID3D12DescriptorHeap* mainDescriptorHeap;
 
-    Texture(LPCWSTR filename);
+    Texture(LPCWSTR filename, CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle);
     int LoadImageDataFromFile(BYTE** imageData, D3D12_RESOURCE_DESC& resourceDescription, LPCWSTR filename, int &bytesPerRow);
     DXGI_FORMAT GetDXGIFormatFromWICFormat(WICPixelFormatGUID& wicFormatGUID);
     WICPixelFormatGUID GetConvertToWICFormat(WICPixelFormatGUID& wicFormatGUID);

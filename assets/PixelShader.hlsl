@@ -11,5 +11,5 @@ struct VS_OUTPUT
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
     float4 diffuse = t1.Sample(s1, input.uv);
-    return input.color * diffuse;
+    return diffuse * input.color;
 }

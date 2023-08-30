@@ -1,17 +1,10 @@
 #include "Texture.h"
 #include "DX.h"
 
-Texture::Texture(LPCWSTR filename)
+Texture::Texture(LPCWSTR filename, CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle)
 {
 	ID3D12Device* device = DX::dx->device;
 	ID3D12GraphicsCommandList* commandList = DX::dx->commandList;
-
-	// create the descriptor heap that will store our srv
-    D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-	heapDesc.NumDescriptors = 1;
-	heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-	heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-	device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&mainDescriptorHeap));
 
     // Load the image from file
 	D3D12_RESOURCE_DESC textureDesc;
@@ -70,7 +63,7 @@ Texture::Texture(LPCWSTR filename)
 	srvDesc.Format = textureDesc.Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
-	device->CreateShaderResourceView(textureBuffer, &srvDesc, mainDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	device->CreateShaderResourceView(textureBuffer, &srvDesc, cbvHandle);
 }
 
 // load and decode image from file
