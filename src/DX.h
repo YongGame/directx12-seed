@@ -11,6 +11,9 @@ class Sample;
 
 class DX{
 public:
+    int width;
+    int height;
+
     Sample* sample;
     
     IDXGIFactory4* dxgiFactory;
@@ -54,9 +57,9 @@ public:
 private:
     void initDevice();
     void initQueue();
-    void initSwapChain(HWND hwnd, int w, int h, bool fullScene);
+    void initSwapChain(HWND hwnd, bool fullScene);
 	void initRTV();
-    void initDSV(int w, int h);
+    void initDSV();
 	void initCmdList();
 	void initFence();
 };

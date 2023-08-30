@@ -3,11 +3,13 @@
 
 void DX::init(HWND hwnd, int w, int h, bool fullScene)
 {
+	width = w;
+	height = h;
 	initDevice();
 	initQueue();
-	initSwapChain(hwnd, w, h, fullScene);
+	initSwapChain(hwnd, fullScene);
 	initRTV();
-	initDSV(w, h);
+	initDSV();
 	initCmdList();
 	initFence();
 
@@ -182,7 +184,7 @@ void DX::initRTV()
 	}
 }
 
-void DX::initDSV(int w, int h)
+void DX::initDSV()
 {
 	// create a depth stencil descriptor heap so we can get a pointer to the depth stencil buffer
     D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
@@ -204,7 +206,7 @@ void DX::initDSV(int w, int h)
 	device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
         D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, w, h, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+        &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
         D3D12_RESOURCE_STATE_DEPTH_WRITE,
         &depthOptimizedClearValue,
         IID_PPV_ARGS(&depthStencilBuffer)
@@ -215,11 +217,11 @@ void DX::initDSV(int w, int h)
     device->CreateDepthStencilView(depthStencilBuffer, &depthStencilDesc, dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
-void DX::initSwapChain(HWND hwnd, int w, int h, bool fullScene)
+void DX::initSwapChain(HWND hwnd, bool fullScene)
 {
 	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
-	backBufferDesc.Width = w; // buffer width
-	backBufferDesc.Height = h; // buffer height
+	backBufferDesc.Width = width; // buffer width
+	backBufferDesc.Height = height; // buffer height
 	backBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the buffer (rgba 32 bits, 8 bits for each chanel)
 
 	// describe our multi-sampling. We are not multi-sampling, so we set the count to 1 (we need at least one sample of course)
