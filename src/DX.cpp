@@ -402,7 +402,7 @@ D3D12_VERTEX_BUFFER_VIEW DX::createVertexBuffer(int vBufferSize, int strideInByt
 	return vertexBufferView;
 }
 
-void DX::uploadBuffer()
+void DX::uploadRes()
 {
 	// Now we execute the command list to upload the initial assets (triangle data)
     commandList->Close();

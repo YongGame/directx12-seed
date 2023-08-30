@@ -53,7 +53,7 @@ public:
     D3D12_SHADER_BYTECODE createShader(LPCWSTR pFileName, LPCSTR pTarget);
     D3D12_VERTEX_BUFFER_VIEW createVertexBuffer(int vBufferSize, int strideInBytes, const void * pData);
     D3D12_INDEX_BUFFER_VIEW createIndexBuffer(int iBufferSize, const void * pData);
-    void uploadBuffer();
+    void uploadRes();
 private:
     void initDevice();
     void initQueue();
