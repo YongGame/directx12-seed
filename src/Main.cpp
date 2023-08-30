@@ -15,7 +15,7 @@ int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
 		return 1;
 	}
 
-	dx.sample = new Traingle(dx);
+	dx.sample = new Traingle();
 	dx.init(hwnd, Width, Height, FullScreen);
 
 	// start the main loop

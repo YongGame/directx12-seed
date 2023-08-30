@@ -11,6 +11,7 @@ class Sample;
 
 class DX{
 public:
+    static DX* dx;
     int width;
     int height;
 

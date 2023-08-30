@@ -2,6 +2,8 @@
 #include "Sample.h"
 #include "DX.h"
 
+class Texture;
+
 using namespace DirectX;
 
 // this is the structure of our constant buffer.
@@ -74,7 +76,8 @@ public:
 
     int numCubeIndices; // the number of indices to draw the cube
 
-    Traingle(DX &dx);
+    Texture* tex;
+
     virtual void init();
     virtual void Update();
     virtual void UpdatePipeline();

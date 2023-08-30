@@ -1,8 +1,12 @@
 #include "dx.h"
 #include "Sample.h"
 
+DX* DX::dx = nullptr;
+
 void DX::init(HWND hwnd, int w, int h, bool fullScene)
 {
+	dx = this;
+	
 	width = w;
 	height = h;
 	initDevice();
@@ -16,8 +20,8 @@ void DX::init(HWND hwnd, int w, int h, bool fullScene)
 	// Fill out the Viewport
     viewport.TopLeftX = 0;
     viewport.TopLeftY = 0;
-    viewport.Width = w;
-    viewport.Height = h;
+    viewport.Width = float(w);
+    viewport.Height = float(h);
     viewport.MinDepth = 0.0f;
     viewport.MaxDepth = 1.0f;
 
