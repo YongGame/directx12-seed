@@ -99,29 +99,23 @@ void DX::UpdatePipeline()
 	// transition the "frameIndex" render target from the present state to the render target state so the command list draws to it starting from here
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
-	// here we again get the handle to our current render target view so we can set it as the render target in the output merger stage of the pipeline
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), frameIndex, rtvDescriptorSize);
-
-	// get a handle to the depth/stencil buffer
-    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
-	// set the render target for the output merger stage (the output of the pipeline)
-	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
-
-	// Clear the render target by using the ClearRenderTargetView command
-	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-
-	// clear the depth/stencil buffer
-    commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
 	commandList->RSSetViewports(1, &viewport); // set the viewports
     commandList->RSSetScissorRects(1, &scissorRect); // set the scissor rects
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology
-	
-	sample->UpdatePipeline();
 
-	
+	// here we again get the handle to our current render target view so we can set it as the render target in the output merger stage of the pipeline
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), frameIndex, rtvDescriptorSize);
+	// get a handle to the depth/stencil buffer
+    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	// set the render target for the output merger stage (the output of the pipeline)
+	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+	// Clear the render target by using the ClearRenderTargetView command
+	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	// clear the depth/stencil buffer
+    commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+	sample->UpdatePipeline();
 }
 
 void DX::resize(int w, int h)
@@ -299,9 +293,19 @@ void DX::initDSV()
 
 void DX::initSwapChain(HWND hwnd, bool fullScene)
 {
+	// 假如窗口尺寸为800*600，那么实际的客户区域大概为784*561，要去掉标题栏和边框，swapChain和DSV的尺寸要等于客户区域，并非窗口size。
+	// viewport 和 scissorRect 的尺寸貌似也要和客户区域相同哇。
+	// 文档说，假如 swapchain的size和窗口size不同，默认会使用 DXGI_SCALING_STRETCH 拉伸模式，拉伸swapchian的size和窗口保持一致，拉伸会导致画面变形，imgui鼠标偏移哇。
+	// 文档说，可以设置swapchain的Width和Height为0，然后如果采用 CreateSwapChainForHwnd 此方法创建交换链，会自动将Width和Height设置为实际的窗口客户size。
+	// 实验表明如果设置为0，即使不使用CreateSwapChainForHwnd创建交换链，也会设置为正确的size。
+
+	// 奇怪的地方？
+	// 假如此处Width和Height都大于实际的窗口客户size，那么FPS是一千多。 一旦某个size小于窗口客户size，fps立马降低到60了，为什么???
+	// 具体表现是从高帧率掉到60，为什么会这样???
+	// 难道是UHD630的驱动问题???
 	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
-	backBufferDesc.Width = width; // buffer width
-	backBufferDesc.Height = height; // buffer height
+	backBufferDesc.Width = 0; // buffer width
+	backBufferDesc.Height = 0; // buffer height
 	backBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the buffer (rgba 32 bits, 8 bits for each chanel)
 
 	// describe our multi-sampling. We are not multi-sampling, so we set the count to 1 (we need at least one sample of course)
