@@ -527,11 +527,6 @@ D3D12_SHADER_BYTECODE DX::createShader(LPCWSTR pFileName, LPCSTR pTarget)
 
 void DX::destory()
 {
-    // get swapchain out of full screen before exiting
-    BOOL fs = false;
-    if (swapChain->GetFullscreenState(&fs, NULL))
-        swapChain->SetFullscreenState(false, NULL);
-
     SAFE_RELEASE(device);
     SAFE_RELEASE(swapChain);
     SAFE_RELEASE(commandQueue);
@@ -544,7 +539,7 @@ void DX::destory()
         SAFE_RELEASE(commandAllocator[i]);
         SAFE_RELEASE(fence[i]);
     };
-
+/*
 	#ifdef DX12_ENABLE_DEBUG_LAYER
 		IDXGIDebug1* pDebug = nullptr;
 		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug))))
@@ -552,5 +547,5 @@ void DX::destory()
 			pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_SUMMARY);
 			pDebug->Release();
 		}
-	#endif
+	#endif*/
 }

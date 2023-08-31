@@ -37,6 +37,11 @@ int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+	// Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsLight();
+
 	// Setup Platform/Renderer backends
 	ImGui_ImplWin32_Init(hwnd);
 	ImGui_ImplDX12_Init(dx.device, dx.frameBufferCount, DXGI_FORMAT_R8G8B8A8_UNORM, 
@@ -70,7 +75,7 @@ int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
 
-	dx.destory();
+	//dx.destory();
 
 	return 0;
 }
