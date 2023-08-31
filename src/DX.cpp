@@ -348,10 +348,17 @@ void DX::initSwapChain(HWND hwnd, bool fullScene)
 	// 文档说，可以设置swapchain的Width和Height为0，然后如果采用 CreateSwapChainForHwnd 此方法创建交换链，会自动将Width和Height设置为实际的窗口客户size。
 	// 实验表明如果设置为0，即使不使用CreateSwapChainForHwnd创建交换链，也会设置为正确的size。
 
-	// 奇怪的地方？
-	// 假如此处Width和Height都大于实际的窗口客户size，那么FPS是一千多。 一旦某个size小于窗口客户size，fps立马降低到60了，为什么???
-	// 具体表现是从高帧率掉到60，为什么会这样???
-	// 难道是UHD630的驱动问题???
+	// 奇怪的地方？ 为什么没有全速率执行？ 即使非垂直同步，fps也受限了 ？
+
+	// 解答： 这里有相关的描述  https://developer.nvidia.com/dx12-dos-and-donts
+	// 只有全屏 并且 Present(0,0) 时 才允许无限帧速率和撕裂 。 任何其他模式都不允许无限帧速率和撕裂。
+	// 如果不是全屏状态（真正的立即独立翻转模式），请仔细控制交换链中的延迟和缓冲区计数，以获得所需的 FPS 和延迟
+	// 使用 IDXGISwapChain2::SetMaximumFrameLatency(MaxLatency) 设置所需的延迟，
+	// 为此，您需要创建带有 DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT 标志集的交换链。
+	// 在您呈现 MaxLatency-1 次后，DXGI 将开始在 Present() 中阻塞
+	// 默认延迟为 3 时，这意味着 FPS 不能高于 2 * RefershRate。因此，对于 60Hz 显示器，FPS 不能超过 120 FPS。
+	// 确实如此： UHD630中为60fps， RTX3070为120fps。
+
 /*	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
 	backBufferDesc.Width = 0; // buffer width
 	backBufferDesc.Height = 0; // buffer height
