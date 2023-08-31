@@ -120,12 +120,14 @@ void DX::UpdatePipeline()
 
 void DX::resize(int w, int h)
 {
-	//if(width == w && height == h) return;
+	if(width == w && height == h) return;
 
 	width = w;
 	height = h;
 
-    WaitForLastSubmittedFrame();
+    WaitForLastSubmittedFrame(0);
+    WaitForLastSubmittedFrame(1);
+    WaitForLastSubmittedFrame(2);
 
 	for (UINT i = 0; i < frameBufferCount; i++)
     {
@@ -144,8 +146,8 @@ void DX::resize(int w, int h)
 	HRESULT result = swapChain->ResizeBuffers(0, w, h, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT);
 	assert(SUCCEEDED(result) && "Failed to resize swapchain.");
 
-	initRTV();
-	initDSV();
+	createRTV_res();
+	createDSV_res();
 
     viewport.Width = float(w);
     viewport.Height = float(h);
@@ -153,16 +155,16 @@ void DX::resize(int w, int h)
     scissorRect.bottom = h;
 }
 
-void DX::WaitForLastSubmittedFrame()
+void DX::WaitForLastSubmittedFrame(int index)
 {
-	if(fenceValue[frameIndex] == 0) return; // No fence was signaled
+	if(fenceValue[index] == 0) return; // No fence was signaled
 
 	// if the current fence value is still less than "fenceValue", then we know the GPU has not finished executing
 	// the command queue since it has not reached the "commandQueue->Signal(fence, fenceValue)" command
-	if (fence[frameIndex]->GetCompletedValue() < fenceValue[frameIndex])
+	if (fence[index]->GetCompletedValue() < fenceValue[index])
 	{
 		// we have the fence create an event which is signaled once the fence's current value is "fenceValue"
-		ThrowIfFailed(fence[frameIndex]->SetEventOnCompletion(fenceValue[frameIndex], fenceEvent));
+		ThrowIfFailed(fence[index]->SetEventOnCompletion(fenceValue[index], fenceEvent));
 
 		// We will wait until the fence has triggered the event that it's current value has reached "fenceValue". once it's value
 		// has reached "fenceValue", we know the command queue has finished executing
@@ -239,6 +241,11 @@ void DX::initRTV()
 	// device to give us the size. we will use this size to increment a descriptor handle offset
 	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
+	createRTV_res();
+}
+
+void DX::createRTV_res()
+{
 	// get a handle to the first descriptor in the descriptor heap. a handle is basically a pointer,
 	// but we cannot literally use it like a c++ pointer.
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
@@ -253,6 +260,8 @@ void DX::initRTV()
 		// the we "create" a render target view which binds the swap chain buffer (ID3D12Resource[n]) to the rtv handle
 		device->CreateRenderTargetView(renderTargets[i], nullptr, rtvHandle);
 
+		renderTargets[i]->SetName(L"RTV Resource");
+		//renderTargets[i]->SetName("RTV Resource"); 
 		// we increment the rtv handle by the rtv descriptor size we got above
 		rtvHandle.Offset(1, rtvDescriptorSize);
 	}
@@ -267,6 +276,11 @@ void DX::initDSV()
     dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     ThrowIfFailed(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap)));
 
+	createDSV_res();
+}
+
+void DX::createDSV_res()
+{
 	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
     depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
     depthStencilDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
@@ -285,14 +299,49 @@ void DX::initDSV()
         &depthOptimizedClearValue,
         IID_PPV_ARGS(&depthStencilBuffer)
         );
-    ThrowIfFailed(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap)));
+    
     dsDescriptorHeap->SetName(L"Depth/Stencil Resource Heap");
+
+	depthStencilBuffer->SetName(L"depth Resource");
 
     device->CreateDepthStencilView(depthStencilBuffer, &depthStencilDesc, dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 }
 
 void DX::initSwapChain(HWND hwnd, bool fullScene)
 {
+	DXGI_SWAP_CHAIN_DESC1 sd;
+    {
+        ZeroMemory(&sd, sizeof(sd));
+        sd.BufferCount = frameBufferCount;
+        sd.Width = 0;
+        sd.Height = 0;
+        sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        sd.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+        sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        sd.SampleDesc.Count = 1;
+        sd.SampleDesc.Quality = 0;
+        sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+        sd.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
+        sd.Scaling = DXGI_SCALING_STRETCH;
+        sd.Stereo = FALSE;
+    }
+	
+	IDXGIFactory4* dxgiFactory = nullptr;
+	IDXGISwapChain1* swapChain1 = nullptr;
+	if (CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)) != S_OK)
+		return;
+	if (dxgiFactory->CreateSwapChainForHwnd(commandQueue, hwnd, &sd, nullptr, nullptr, &swapChain1) != S_OK)
+		return;
+	if (swapChain1->QueryInterface(IID_PPV_ARGS(&swapChain)) != S_OK)
+		return;
+	swapChain1->Release();
+	dxgiFactory->Release();
+	swapChain->SetMaximumFrameLatency(frameBufferCount);
+	//g_hSwapChainWaitableObject = swapChain->GetFrameLatencyWaitableObject();
+
+	sampleDesc.Count = 1;
+    
+
 	// 假如窗口尺寸为800*600，那么实际的客户区域大概为784*561，要去掉标题栏和边框，swapChain和DSV的尺寸要等于客户区域，并非窗口size。
 	// viewport 和 scissorRect 的尺寸貌似也要和客户区域相同哇。
 	// 文档说，假如 swapchain的size和窗口size不同，默认会使用 DXGI_SCALING_STRETCH 拉伸模式，拉伸swapchian的size和窗口保持一致，拉伸会导致画面变形，imgui鼠标偏移哇。
@@ -303,7 +352,7 @@ void DX::initSwapChain(HWND hwnd, bool fullScene)
 	// 假如此处Width和Height都大于实际的窗口客户size，那么FPS是一千多。 一旦某个size小于窗口客户size，fps立马降低到60了，为什么???
 	// 具体表现是从高帧率掉到60，为什么会这样???
 	// 难道是UHD630的驱动问题???
-	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
+/*	DXGI_MODE_DESC backBufferDesc = {}; // this is to describe our display mode
 	backBufferDesc.Width = 0; // buffer width
 	backBufferDesc.Height = 0; // buffer height
 	backBufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the buffer (rgba 32 bits, 8 bits for each chanel)
@@ -330,7 +379,7 @@ void DX::initSwapChain(HWND hwnd, bool fullScene)
 	));
 
 	swapChain = static_cast<IDXGISwapChain3*>(tempSwapChain);
-
+*/
 	frameIndex = swapChain->GetCurrentBackBufferIndex();
 }
 

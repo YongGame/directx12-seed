@@ -58,10 +58,12 @@ public:
     void Render();
     void UpdatePipeline();
     void WaitForPreviousFrame();
-    void WaitForLastSubmittedFrame();
+    void WaitForLastSubmittedFrame(int index);
     void resize(int w, int h);
     void destory();
 
+    void createRTV_res();
+    void createDSV_res();
     D3D12_SHADER_BYTECODE createShader(LPCWSTR pFileName, LPCSTR pTarget);
     D3D12_VERTEX_BUFFER_VIEW createVertexBuffer(int vBufferSize, int strideInBytes, const void * pData);
     D3D12_INDEX_BUFFER_VIEW createIndexBuffer(int iBufferSize, const void * pData);

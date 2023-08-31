@@ -24,6 +24,9 @@ int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
 	dx.sample = new Traingle();
 	dx.init(hwnd, Width, Height, FullScreen);
 
+	ShowWindow(hwnd, nShowCmd);
+	UpdateWindow(hwnd);
+
 	D3D12_DESCRIPTOR_HEAP_DESC descriptorImGuiRender = {};
 	descriptorImGuiRender.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	descriptorImGuiRender.NumDescriptors = 1;
@@ -141,9 +144,6 @@ bool InitializeWindow(HINSTANCE hInstance,
 		SetWindowLong(hwnd, GWL_STYLE, 0);
 	}
 
-	ShowWindow(hwnd, ShowWnd);
-	UpdateWindow(hwnd);
-
 	return true;
 }
 
@@ -206,7 +206,7 @@ LRESULT CALLBACK WndProc(HWND hwnd,
 	case WM_SIZE:
         if (dx.device != nullptr && wParam != SIZE_MINIMIZED)
         {
-            //dx.resize((UINT)LOWORD(lParam), (UINT)HIWORD(lParam));
+            dx.resize((UINT)LOWORD(lParam), (UINT)HIWORD(lParam));
         }
         return 0;
 
