@@ -29,6 +29,7 @@ if(NOT CMAKE_DEBUG_POSTFIX)
 endif()
 
 add_definitions(-DUNICODE -D_UNICODE)  # 使用 unicode 字符集
+add_definitions(/utf-8)
 
 # =============================================================
 
@@ -43,6 +44,13 @@ message(STATUS "Installing glm via submodule")
 set(BUILD_STATIC_LIBS ON)
 add_subdirectory(external/glm/glm)
 set_property(TARGET glm_static PROPERTY FOLDER "Dependencies")
+
+#imgui
+set (GUI_DIR external/imgui)
+file(GLOB IMGUI_SOURCES ${GUI_DIR}/*.cpp)
+file(GLOB IMGUI_HEADERS ${GUI_DIR}/*.h)
+include_directories (${GUI_DIR})
+add_library(imgui STATIC ${IMGUI_SOURCES} ${IMGUI_HEADERS})
 
 # =============================================================
 
@@ -82,6 +90,7 @@ target_link_libraries(
     PUBLIC dxguid.lib
     PUBLIC d3dcompiler.lib
     glm_static
+    imgui
 )
 
 target_include_directories(

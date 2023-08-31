@@ -43,3 +43,4 @@ LRESULT CALLBACK WndProc(HWND hWnd,
 	LPARAM lParam);
 
 DX dx;
+ID3D12DescriptorHeap* d3d12DescriptorHeapImGuiRender; 

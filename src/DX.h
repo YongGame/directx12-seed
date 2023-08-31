@@ -12,8 +12,8 @@ class Sample;
 class DX{
 public:
     static DX* dx;
-    int width;
-    int height;
+    int width{0};
+    int height{0};
 
     Sample* sample;
     
@@ -26,12 +26,12 @@ public:
     int rtvDescriptorSize;
     ID3D12DescriptorHeap* rtvDescriptorHeap;
 
-    ID3D12Resource* depthStencilBuffer; // This is the memory for our depth buffer. it will also be used for a stencil buffer in a later tutorial
+    ID3D12Resource* depthStencilBuffer{nullptr}; // This is the memory for our depth buffer. it will also be used for a stencil buffer in a later tutorial
     ID3D12DescriptorHeap* dsDescriptorHeap; // This is a heap for our depth/stencil buffer descriptor
 
     int frameIndex;
     const static int frameBufferCount = 3;
-    ID3D12Resource* renderTargets[frameBufferCount];
+    ID3D12Resource* renderTargets[frameBufferCount]{nullptr, nullptr, nullptr};
     ID3D12CommandAllocator* commandAllocator[frameBufferCount];
     ID3D12Fence* fence[frameBufferCount];
     UINT64 fenceValue[frameBufferCount];
@@ -49,18 +49,21 @@ public:
     void Render();
     void UpdatePipeline();
     void WaitForPreviousFrame();
+    void WaitForLastSubmittedFrame();
+    void resize(int w, int h);
     void destory();
 
     D3D12_SHADER_BYTECODE createShader(LPCWSTR pFileName, LPCSTR pTarget);
     D3D12_VERTEX_BUFFER_VIEW createVertexBuffer(int vBufferSize, int strideInBytes, const void * pData);
     D3D12_INDEX_BUFFER_VIEW createIndexBuffer(int iBufferSize, const void * pData);
     void uploadRes();
+
+    void initRTV();
+    void initDSV();
 private:
     void initDevice();
     void initQueue();
     void initSwapChain(HWND hwnd, bool fullScene);
-	void initRTV();
-    void initDSV();
 	void initCmdList();
 	void initFence();
 };

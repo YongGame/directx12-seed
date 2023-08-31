@@ -12,10 +12,12 @@ void DX::init(HWND hwnd, int w, int h, bool fullScene)
 	initDevice();
 	initQueue();
 	initSwapChain(hwnd, fullScene);
-	initRTV();
+	initRTV(); 
 	initDSV();
 	initCmdList();
 	initFence();
+
+	sample->init();
 
 	// Fill out the Viewport
     viewport.TopLeftX = 0;
@@ -30,8 +32,6 @@ void DX::init(HWND hwnd, int w, int h, bool fullScene)
     scissorRect.top = 0;
     scissorRect.right = w;
     scissorRect.bottom = h;
-
-	sample->init();
 }
 
 void DX::Update()
@@ -41,7 +41,13 @@ void DX::Update()
 
 void DX::Render()
 {
-	UpdatePipeline(); // update the pipeline by sending commands to the commandqueue
+	//UpdatePipeline(); // update the pipeline by sending commands to the commandqueue
+
+	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
+	// warning if present is called on the render target when it's not in the present state
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
+	ThrowIfFailed(commandList->Close());
 
 					  // create an array of command lists (only one command list here)
 	ID3D12CommandList* ppCommandLists[] = { commandList };
@@ -93,11 +99,59 @@ void DX::UpdatePipeline()
 	
 	sample->UpdatePipeline();
 
-	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
-	// warning if present is called on the render target when it's not in the present state
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	
+}
 
-	ThrowIfFailed(commandList->Close());
+void DX::resize(int w, int h)
+{
+	//if(width == w && height == h) return;
+
+	width = w;
+	height = h;
+
+    WaitForLastSubmittedFrame();
+
+	for (UINT i = 0; i < frameBufferCount; i++)
+    {
+		if (renderTargets[i]) {
+			renderTargets[i]->Release();
+			renderTargets[i] = nullptr; 
+		}
+	}    
+	
+	if(depthStencilBuffer)
+	{
+		depthStencilBuffer->Release();
+		depthStencilBuffer = nullptr; 
+	}
+
+	HRESULT result = swapChain->ResizeBuffers(0, w, h, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT);
+	assert(SUCCEEDED(result) && "Failed to resize swapchain.");
+
+	initRTV();
+	initDSV();
+
+    viewport.Width = float(w);
+    viewport.Height = float(h);
+    scissorRect.right = w;
+    scissorRect.bottom = h;
+}
+
+void DX::WaitForLastSubmittedFrame()
+{
+	if(fenceValue[frameIndex] == 0) return; // No fence was signaled
+
+	// if the current fence value is still less than "fenceValue", then we know the GPU has not finished executing
+	// the command queue since it has not reached the "commandQueue->Signal(fence, fenceValue)" command
+	if (fence[frameIndex]->GetCompletedValue() < fenceValue[frameIndex])
+	{
+		// we have the fence create an event which is signaled once the fence's current value is "fenceValue"
+		ThrowIfFailed(fence[frameIndex]->SetEventOnCompletion(fenceValue[frameIndex], fenceEvent));
+
+		// We will wait until the fence has triggered the event that it's current value has reached "fenceValue". once it's value
+		// has reached "fenceValue", we know the command queue has finished executing
+		WaitForSingleObject(fenceEvent, INFINITE);
+	}
 }
 
 void DX::WaitForPreviousFrame()
@@ -451,13 +505,6 @@ D3D12_SHADER_BYTECODE DX::createShader(LPCWSTR pFileName, LPCSTR pTarget)
 
 void DX::destory()
 {
-	// wait for the gpu to finish all frames
-    for (int i = 0; i < frameBufferCount; ++i)
-    {
-        frameIndex = i;
-        WaitForPreviousFrame();
-    }
-    
     // get swapchain out of full screen before exiting
     BOOL fs = false;
     if (swapChain->GetFullscreenState(&fs, NULL))
