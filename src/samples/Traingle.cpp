@@ -185,8 +185,6 @@ void Traingle::initCBV()
     
     for (int i = 0; i < dx->frameBufferCount; ++i)
     {
-        CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(CBV_SRV_UAV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), i, CBV_SRV_UAV_DescriptorSize);
-
         ThrowIfFailed(dx->device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // this heap will be used to upload the constant buffer data
             D3D12_HEAP_FLAG_NONE, // no flags
@@ -196,9 +194,13 @@ void Traingle::initCBV()
             IID_PPV_ARGS(&constantBufferUploadHeap[i])));
         constantBufferUploadHeap[i]->SetName(L"Constant Buffer Upload Resource Heap");
 
+        // 描述符句柄
+        CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(CBV_SRV_UAV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), i, CBV_SRV_UAV_DescriptorSize);
+        // 资源的类型描述
         D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
         cbvDesc.BufferLocation = constantBufferUploadHeap[i]->GetGPUVirtualAddress();
         cbvDesc.SizeInBytes = (sizeof(ConstantBuffer) + 255) & ~255;    // CB size is required to be 256-byte aligned.
+        // 将资源关联到描述符句柄
         dx->device->CreateConstantBufferView(&cbvDesc, cbvHandle);
         //cbvHandle.Offset(1, CBV_SRV_UAV_DescriptorSize);
 
