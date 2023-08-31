@@ -6,10 +6,32 @@ DX* DX::dx = nullptr;
 void DX::init(HWND hwnd, int w, int h, bool fullScene)
 {
 	dx = this;
-	
 	width = w;
 	height = h;
+
+	// [DEBUG] Enable debug interface
+	#ifdef DX12_ENABLE_DEBUG_LAYER
+		ID3D12Debug* pdx12Debug = nullptr;
+		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&pdx12Debug))))
+			pdx12Debug->EnableDebugLayer();
+	#endif
+
 	initDevice();
+
+	// [DEBUG] Setup debug interface to break on any warnings/errors
+	#ifdef DX12_ENABLE_DEBUG_LAYER
+		if (pdx12Debug != nullptr)
+		{
+			ID3D12InfoQueue* pInfoQueue = nullptr;
+			device->QueryInterface(IID_PPV_ARGS(&pInfoQueue));
+			pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+			pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+			pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
+			pInfoQueue->Release();
+			pdx12Debug->Release();
+		}
+	#endif
+
 	initQueue();
 	initSwapChain(hwnd, fullScene);
 	initRTV(); 
@@ -522,4 +544,13 @@ void DX::destory()
         SAFE_RELEASE(commandAllocator[i]);
         SAFE_RELEASE(fence[i]);
     };
+
+	#ifdef DX12_ENABLE_DEBUG_LAYER
+		IDXGIDebug1* pDebug = nullptr;
+		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&pDebug))))
+		{
+			pDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_SUMMARY);
+			pDebug->Release();
+		}
+	#endif
 }

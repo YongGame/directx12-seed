@@ -7,6 +7,15 @@
 #include "d3dx12.h"
 #include "Help.h"
 
+#ifdef _DEBUG
+#define DX12_ENABLE_DEBUG_LAYER
+#endif
+
+#ifdef DX12_ENABLE_DEBUG_LAYER
+#include <dxgidebug.h>
+#pragma comment(lib, "dxguid.lib")
+#endif
+
 class Sample;
 
 class DX{
