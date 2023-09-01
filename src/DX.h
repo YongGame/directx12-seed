@@ -24,6 +24,9 @@ public:
     int width{0};
     int height{0};
 
+    int frameIndex;
+    const static int frameBufferCount = 3;
+
     Sample* sample;
     
     IDXGIFactory4* dxgiFactory;
@@ -32,15 +35,15 @@ public:
     ID3D12CommandQueue* commandQueue;
     ID3D12GraphicsCommandList* commandList;
 
-    int rtvDescriptorSize;
-    ID3D12DescriptorHeap* rtvDescriptorHeap;
+    // rtv
+    ID3D12DescriptorHeap* g_rtv_desc_heap; // 描述符堆
+    D3D12_CPU_DESCRIPTOR_HANDLE g_rtv_desc_handle[frameBufferCount]{}; // 描述符句柄
+    ID3D12Resource* g_rtv_res[frameBufferCount]{}; // 资源
 
+    // dsv
     ID3D12Resource* depthStencilBuffer{nullptr}; // This is the memory for our depth buffer. it will also be used for a stencil buffer in a later tutorial
     ID3D12DescriptorHeap* dsDescriptorHeap; // This is a heap for our depth/stencil buffer descriptor
 
-    int frameIndex;
-    const static int frameBufferCount = 3;
-    ID3D12Resource* renderTargets[frameBufferCount]{nullptr, nullptr, nullptr};
     ID3D12CommandAllocator* commandAllocator[frameBufferCount];
     ID3D12Fence* fence[frameBufferCount];
     UINT64 fenceValue[frameBufferCount];

@@ -67,7 +67,7 @@ void DX::Render()
 
 	// transition the "frameIndex" render target from the render target state to the present state. If the debug layer is enabled, you will receive a
 	// warning if present is called on the render target when it's not in the present state
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(g_rtv_res[frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 	commandList->Close();
 
@@ -97,21 +97,19 @@ void DX::UpdatePipeline()
 	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
 
 	// transition the "frameIndex" render target from the present state to the render target state so the command list draws to it starting from here
-	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(g_rtv_res[frameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	commandList->RSSetViewports(1, &viewport); // set the viewports
     commandList->RSSetScissorRects(1, &scissorRect); // set the scissor rects
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology
 
-	// here we again get the handle to our current render target view so we can set it as the render target in the output merger stage of the pipeline
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), frameIndex, rtvDescriptorSize);
 	// get a handle to the depth/stencil buffer
     CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	// set the render target for the output merger stage (the output of the pipeline)
-	commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+	commandList->OMSetRenderTargets(1, &g_rtv_desc_handle[frameIndex], FALSE, &dsvHandle);
 	// Clear the render target by using the ClearRenderTargetView command
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-	commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+	commandList->ClearRenderTargetView(g_rtv_desc_handle[frameIndex], clearColor, 0, nullptr);
 	// clear the depth/stencil buffer
     commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
@@ -131,9 +129,9 @@ void DX::resize(int w, int h)
 
 	for (UINT i = 0; i < frameBufferCount; i++)
     {
-		if (renderTargets[i]) {
-			renderTargets[i]->Release();
-			renderTargets[i] = nullptr; 
+		if (g_rtv_res[i]) {
+			g_rtv_res[i]->Release();
+			g_rtv_res[i] = nullptr; 
 		}
 	}    
 	
@@ -234,36 +232,38 @@ void DX::init_RTV_DESC_HEAP()
 	// This heap will not be directly referenced by the shaders (not shader visible), as this will store the output from the pipeline
 	// otherwise we would set the heap's flag to D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvDescriptorHeap));
+	device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&g_rtv_desc_heap));
 
 	// get the size of a descriptor in this heap (this is a rtv heap, so only rtv descriptors should be stored in it.
 	// descriptor sizes may vary from device to device, which is why there is no set size and we must ask the 
 	// device to give us the size. we will use this size to increment a descriptor handle offset
-	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	int rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	// get a handle to the first descriptor in the descriptor heap. a handle is basically a pointer,
+	// but we cannot literally use it like a c++ pointer.
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(g_rtv_desc_heap->GetCPUDescriptorHandleForHeapStart());
+
+	for (UINT i = 0; i < frameBufferCount; i++)
+	{
+		g_rtv_desc_handle[i] = rtvHandle;
+		rtvHandle.ptr += rtvDescriptorSize;
+	}
 
 	create_RTV_RES();
 }
 
 void DX::create_RTV_RES()
 {
-	// get a handle to the first descriptor in the descriptor heap. a handle is basically a pointer,
-	// but we cannot literally use it like a c++ pointer.
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
 	// Create a RTV for each buffer (double buffering is two buffers, tripple buffering is 3).
 	for (int i = 0; i < frameBufferCount; i++)
 	{
 		// first we get the n'th buffer in the swap chain and store it in the n'th
 		// position of our ID3D12Resource array
-		swapChain->GetBuffer(i, IID_PPV_ARGS(&renderTargets[i]));
+		swapChain->GetBuffer(i, IID_PPV_ARGS(&g_rtv_res[i]));
 
 		// the we "create" a render target view which binds the swap chain buffer (ID3D12Resource[n]) to the rtv handle
-		device->CreateRenderTargetView(renderTargets[i], nullptr, rtvHandle);
-
-		renderTargets[i]->SetName(L"RTV Resource");
-		//renderTargets[i]->SetName("RTV Resource"); 
-		// we increment the rtv handle by the rtv descriptor size we got above
-		rtvHandle.Offset(1, rtvDescriptorSize);
+		device->CreateRenderTargetView(g_rtv_res[i], nullptr, g_rtv_desc_handle[i]);
+		
+		g_rtv_res[i]->SetName(L"RTV Resource");
 	}
 }
 
@@ -588,12 +588,12 @@ void DX::destory()
     SAFE_RELEASE(device);
     SAFE_RELEASE(swapChain);
     SAFE_RELEASE(commandQueue);
-    SAFE_RELEASE(rtvDescriptorHeap);
+    SAFE_RELEASE(g_rtv_desc_heap);
     SAFE_RELEASE(commandList);
 
     for (int i = 0; i < frameBufferCount; ++i)
     {
-        SAFE_RELEASE(renderTargets[i]);
+        SAFE_RELEASE(g_rtv_res[i]);
         SAFE_RELEASE(commandAllocator[i]);
         SAFE_RELEASE(fence[i]);
     };
