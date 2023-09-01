@@ -77,13 +77,13 @@ void DX::Render()
 	// execute the array of command lists
 	commandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
+	// present the current backbuffer
+	swapChain->Present(0, 0);
+
 	// this command goes in at the end of our command queue. we will know when our command queue 
 	// has finished because the fence value will be set to "fenceValue" from the GPU since the command
 	// queue is being executed on the GPU
 	commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]);
-
-	// present the current backbuffer
-	swapChain->Present(0, 0);
 }
 
 void DX::UpdatePipeline()
@@ -294,7 +294,7 @@ void DX::create_DSV_RES()
 	device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
         D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, 800, 600, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+        &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
         D3D12_RESOURCE_STATE_DEPTH_WRITE,
         &depthOptimizedClearValue,
         IID_PPV_ARGS(&depthStencilBuffer)
