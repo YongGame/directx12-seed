@@ -21,10 +21,14 @@ int WINAPI WinMain(HINSTANCE hInstance,    //Main windows function
 		return 1;
 	}
 
-	dx.sample = new Traingle();
-	dx.init(hwnd, Width, Height, FullScreen);
+	// 获取实际客户区域
+	RECT result;
+	GetClientRect(hwnd, &result);
 
-	ShowWindow(hwnd, nShowCmd);
+	dx.sample = new Traingle();
+	dx.init(hwnd, result.right, result.bottom, FullScreen);
+
+	ShowWindow(hwnd, nShowCmd); // 此处会触发 resize 事件，但是不会进行相关处理
 	UpdateWindow(hwnd);
 
 	D3D12_DESCRIPTOR_HEAP_DESC descriptorImGuiRender = {};
@@ -194,12 +198,12 @@ LRESULT CALLBACK WndProc(HWND hwnd,
 	{
 	case WM_KEYDOWN:
 		if (wParam == VK_ESCAPE) {
-			if (MessageBox(0, L"Are you sure you want to exit?",
-				L"Really?", MB_YESNO | MB_ICONQUESTION) == IDYES)
-			{
+			//if (MessageBox(0, L"Are you sure you want to exit?",
+			//	L"Really?", MB_YESNO | MB_ICONQUESTION) == IDYES)
+			//{
 				Running = false;
 				DestroyWindow(hwnd);
-			}
+			//}
 		}
 		return 0;
 

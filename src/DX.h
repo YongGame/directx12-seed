@@ -48,7 +48,6 @@ public:
 
     D3D12_VIEWPORT viewport;
     D3D12_RECT scissorRect;
-    DXGI_SAMPLE_DESC sampleDesc{};
 
     ID3D12PipelineState* pipelineStateObject;
     
@@ -62,15 +61,17 @@ public:
     void resize(int w, int h);
     void destory();
 
-    void createRTV_res();
-    void createDSV_res();
+    
     D3D12_SHADER_BYTECODE createShader(LPCWSTR pFileName, LPCSTR pTarget);
     D3D12_VERTEX_BUFFER_VIEW createVertexBuffer(int vBufferSize, int strideInBytes, const void * pData);
     D3D12_INDEX_BUFFER_VIEW createIndexBuffer(int iBufferSize, const void * pData);
     void uploadRes();
 
-    void initRTV();
-    void initDSV();
+    void init_RTV_DESC_HEAP();
+    void init_DSV_DESC_HEAP();
+    void create_RTV_RES();
+    void create_DSV_RES();
+    
 private:
     void initDevice();
     void initQueue();

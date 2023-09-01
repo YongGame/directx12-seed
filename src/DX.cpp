@@ -34,8 +34,8 @@ void DX::init(HWND hwnd, int w, int h, bool fullScene)
 
 	initQueue();
 	initSwapChain(hwnd, fullScene);
-	initRTV(); 
-	initDSV();
+	init_RTV_DESC_HEAP(); 
+	init_DSV_DESC_HEAP();
 	initCmdList();
 	initFence();
 
@@ -146,8 +146,8 @@ void DX::resize(int w, int h)
 	HRESULT result = swapChain->ResizeBuffers(0, w, h, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT);
 	assert(SUCCEEDED(result) && "Failed to resize swapchain.");
 
-	createRTV_res();
-	createDSV_res();
+	create_RTV_RES();
+	create_DSV_RES();
 
     viewport.Width = float(w);
     viewport.Height = float(h);
@@ -225,7 +225,7 @@ void DX::initCmdList()
 	//commandList->Close();
 }
 
-void DX::initRTV()
+void DX::init_RTV_DESC_HEAP()
 {
 	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
 	rtvHeapDesc.NumDescriptors = frameBufferCount; // number of descriptors for this heap.
@@ -241,10 +241,10 @@ void DX::initRTV()
 	// device to give us the size. we will use this size to increment a descriptor handle offset
 	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	createRTV_res();
+	create_RTV_RES();
 }
 
-void DX::createRTV_res()
+void DX::create_RTV_RES()
 {
 	// get a handle to the first descriptor in the descriptor heap. a handle is basically a pointer,
 	// but we cannot literally use it like a c++ pointer.
@@ -267,7 +267,7 @@ void DX::createRTV_res()
 	}
 }
 
-void DX::initDSV()
+void DX::init_DSV_DESC_HEAP()
 {
 	// create a depth stencil descriptor heap so we can get a pointer to the depth stencil buffer
     D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
@@ -276,10 +276,10 @@ void DX::initDSV()
     dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
     device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap));
 
-	createDSV_res();
+	create_DSV_RES();
 }
 
-void DX::createDSV_res()
+void DX::create_DSV_RES()
 {
 	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilDesc = {};
     depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
@@ -294,7 +294,7 @@ void DX::createDSV_res()
 	device->CreateCommittedResource(
         &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
         D3D12_HEAP_FLAG_NONE,
-        &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
+        &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, 800, 600, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
         D3D12_RESOURCE_STATE_DEPTH_WRITE,
         &depthOptimizedClearValue,
         IID_PPV_ARGS(&depthStencilBuffer)
@@ -338,8 +338,6 @@ void DX::initSwapChain(HWND hwnd, bool fullScene)
 	dxgiFactory->Release();
 	swapChain->SetMaximumFrameLatency(frameBufferCount);
 	//g_hSwapChainWaitableObject = swapChain->GetFrameLatencyWaitableObject();
-
-	sampleDesc.Count = 1;
     
 
 	// 假如窗口尺寸为800*600，那么实际的客户区域大概为784*561，要去掉标题栏和边框，swapChain和DSV的尺寸要等于客户区域，并非窗口size。
