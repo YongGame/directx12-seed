@@ -36,13 +36,14 @@ public:
     ID3D12GraphicsCommandList* commandList;
 
     // rtv
-    ID3D12DescriptorHeap* g_rtv_desc_heap; // 描述符堆
-    D3D12_CPU_DESCRIPTOR_HANDLE g_rtv_desc_handle[frameBufferCount]{}; // 描述符句柄
-    ID3D12Resource* g_rtv_res[frameBufferCount]{}; // 资源
+    ID3D12DescriptorHeap* g_rtv_desc_heap{}; // 描述符堆
+    D3D12_CPU_DESCRIPTOR_HANDLE g_rtv_desc_handle[frameBufferCount]{}; // 描述符句柄，句柄在描述符堆中，句柄指向资源
+    ID3D12Resource* g_rtv_res[frameBufferCount]{}; // rtv资源，引用的是swapChain创建的后备缓冲资源，不需要显式创建
 
     // dsv
-    ID3D12Resource* depthStencilBuffer{nullptr}; // This is the memory for our depth buffer. it will also be used for a stencil buffer in a later tutorial
-    ID3D12DescriptorHeap* dsDescriptorHeap; // This is a heap for our depth/stencil buffer descriptor
+    ID3D12DescriptorHeap* g_dsv_desc_heap{}; 
+    D3D12_CPU_DESCRIPTOR_HANDLE g_dsv_desc_handle{};
+    ID3D12Resource* g_dsv_res{}; // dsv资源需要手动创建，创建在DEFAULT堆中，由GPU写入。不需要上传任何数据，所以不需要记录相关指令到 cmdList
 
     ID3D12CommandAllocator* commandAllocator[frameBufferCount];
     ID3D12Fence* fence[frameBufferCount];

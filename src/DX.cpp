@@ -103,15 +103,13 @@ void DX::UpdatePipeline()
     commandList->RSSetScissorRects(1, &scissorRect); // set the scissor rects
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST); // set the primitive topology
 
-	// get a handle to the depth/stencil buffer
-    CD3DX12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 	// set the render target for the output merger stage (the output of the pipeline)
-	commandList->OMSetRenderTargets(1, &g_rtv_desc_handle[frameIndex], FALSE, &dsvHandle);
+	commandList->OMSetRenderTargets(1, &g_rtv_desc_handle[frameIndex], FALSE, &g_dsv_desc_handle);
 	// Clear the render target by using the ClearRenderTargetView command
 	const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 	commandList->ClearRenderTargetView(g_rtv_desc_handle[frameIndex], clearColor, 0, nullptr);
 	// clear the depth/stencil buffer
-    commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+    commandList->ClearDepthStencilView(g_dsv_desc_handle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 	sample->UpdatePipeline();
 }
@@ -135,10 +133,10 @@ void DX::resize(int w, int h)
 		}
 	}    
 	
-	if(depthStencilBuffer)
+	if(g_dsv_res)
 	{
-		depthStencilBuffer->Release();
-		depthStencilBuffer = nullptr; 
+		g_dsv_res->Release();
+		g_dsv_res = nullptr; 
 	}
 
 	HRESULT result = swapChain->ResizeBuffers(0, w, h, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT);
@@ -233,7 +231,7 @@ void DX::init_RTV_DESC_HEAP()
 	// otherwise we would set the heap's flag to D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&g_rtv_desc_heap));
-
+	g_rtv_desc_heap->SetName(L"g_rtv_desc_heap");
 	// get the size of a descriptor in this heap (this is a rtv heap, so only rtv descriptors should be stored in it.
 	// descriptor sizes may vary from device to device, which is why there is no set size and we must ask the 
 	// device to give us the size. we will use this size to increment a descriptor handle offset
@@ -262,8 +260,8 @@ void DX::create_RTV_RES()
 
 		// the we "create" a render target view which binds the swap chain buffer (ID3D12Resource[n]) to the rtv handle
 		device->CreateRenderTargetView(g_rtv_res[i], nullptr, g_rtv_desc_handle[i]);
-		
-		g_rtv_res[i]->SetName(L"RTV Resource");
+
+		g_rtv_res[i]->SetName(L"g_rtv_res");
 	}
 }
 
@@ -274,7 +272,10 @@ void DX::init_DSV_DESC_HEAP()
     dsvHeapDesc.NumDescriptors = 1;
     dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
     dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap));
+    device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&g_dsv_desc_heap));
+	g_dsv_desc_heap->SetName(L"g_dsv_desc_heap");
+
+	g_dsv_desc_handle = g_dsv_desc_heap->GetCPUDescriptorHandleForHeapStart();
 
 	create_DSV_RES();
 }
@@ -297,14 +298,12 @@ void DX::create_DSV_RES()
         &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL),
         D3D12_RESOURCE_STATE_DEPTH_WRITE,
         &depthOptimizedClearValue,
-        IID_PPV_ARGS(&depthStencilBuffer)
+        IID_PPV_ARGS(&g_dsv_res)
         );
-    
-    dsDescriptorHeap->SetName(L"Depth/Stencil Resource Heap");
 
-	depthStencilBuffer->SetName(L"depth Resource");
+	g_dsv_res->SetName(L"g_dsv_res");
 
-    device->CreateDepthStencilView(depthStencilBuffer, &depthStencilDesc, dsDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+    device->CreateDepthStencilView(g_dsv_res, &depthStencilDesc, g_dsv_desc_handle);
 }
 
 void DX::initSwapChain(HWND hwnd, bool fullScene)
