@@ -85,6 +85,7 @@ public:
     virtual void init();
     virtual void Update();
     virtual void UpdatePipeline();
+    virtual void resize();
 
     void initRootSignature();
     void initPSO();

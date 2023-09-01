@@ -276,6 +276,13 @@ void Traingle::initCBV()
     XMStoreFloat4x4(&cube2WorldMat, tmpMat); // store cube2's world matrix
 }
 
+void Traingle::resize()
+{
+    // build projection and view matrix
+    XMMATRIX tmpMat = XMMatrixPerspectiveFovLH(45.0f*(3.14f/180.0f), float(dx->width) / float(dx->height), 0.1f, 1000.0f);
+    XMStoreFloat4x4(&cameraProjMat, tmpMat);
+}
+
 void Traingle::initMesh()
 {
     // Create vertex buffer

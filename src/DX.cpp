@@ -149,6 +149,8 @@ void DX::resize(int w, int h)
     viewport.Height = float(h);
     scissorRect.right = w;
     scissorRect.bottom = h;
+
+	sample->resize();
 }
 
 void DX::WaitForLastSubmittedFrame(int index)

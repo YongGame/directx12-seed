@@ -9,4 +9,5 @@ public:
     virtual void init() = 0;
     virtual void Update() = 0;
     virtual void UpdatePipeline() = 0;
+    virtual void resize() = 0;
 };
