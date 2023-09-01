@@ -69,7 +69,7 @@ void DX::Render()
 	// warning if present is called on the render target when it's not in the present state
 	commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(renderTargets[frameIndex], D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-	ThrowIfFailed(commandList->Close());
+	commandList->Close();
 
 					  // create an array of command lists (only one command list here)
 	ID3D12CommandList* ppCommandLists[] = { commandList };
@@ -80,10 +80,10 @@ void DX::Render()
 	// this command goes in at the end of our command queue. we will know when our command queue 
 	// has finished because the fence value will be set to "fenceValue" from the GPU since the command
 	// queue is being executed on the GPU
-	ThrowIfFailed(commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]));
+	commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]);
 
 	// present the current backbuffer
-	ThrowIfFailed(swapChain->Present(0, 0));
+	swapChain->Present(0, 0);
 }
 
 void DX::UpdatePipeline()
@@ -91,8 +91,8 @@ void DX::UpdatePipeline()
 	// We have to wait for the gpu to finish with the command allocator before we reset it
 	WaitForPreviousFrame();
 
-	ThrowIfFailed(commandAllocator[frameIndex]->Reset());
-	ThrowIfFailed(commandList->Reset(commandAllocator[frameIndex], NULL));
+	commandAllocator[frameIndex]->Reset();
+	commandList->Reset(commandAllocator[frameIndex], NULL);
 
 	// here we start recording commands into the commandList (which all the commands will be stored in the commandAllocator)
 
@@ -164,7 +164,7 @@ void DX::WaitForLastSubmittedFrame(int index)
 	if (fence[index]->GetCompletedValue() < fenceValue[index])
 	{
 		// we have the fence create an event which is signaled once the fence's current value is "fenceValue"
-		ThrowIfFailed(fence[index]->SetEventOnCompletion(fenceValue[index], fenceEvent));
+		fence[index]->SetEventOnCompletion(fenceValue[index], fenceEvent);
 
 		// We will wait until the fence has triggered the event that it's current value has reached "fenceValue". once it's value
 		// has reached "fenceValue", we know the command queue has finished executing
@@ -182,7 +182,7 @@ void DX::WaitForPreviousFrame()
 	if (fence[frameIndex]->GetCompletedValue() < fenceValue[frameIndex])
 	{
 		// we have the fence create an event which is signaled once the fence's current value is "fenceValue"
-		ThrowIfFailed(fence[frameIndex]->SetEventOnCompletion(fenceValue[frameIndex], fenceEvent));
+		fence[frameIndex]->SetEventOnCompletion(fenceValue[frameIndex], fenceEvent);
 
 		// We will wait until the fence has triggered the event that it's current value has reached "fenceValue". once it's value
 		// has reached "fenceValue", we know the command queue has finished executing
@@ -197,7 +197,7 @@ void DX::initFence()
 {
 	for (int i = 0; i < frameBufferCount; i++)
 	{
-		ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence[i])));
+		device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence[i]));
 		fenceValue[i] = 0; // set the initial fence value to 0
 	}
 
@@ -205,7 +205,7 @@ void DX::initFence()
 	fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 	if (fenceEvent == nullptr)
 	{
-		ThrowIfFailed(HRESULT_FROM_WIN32(GetLastError()));
+		HRESULT_FROM_WIN32(GetLastError());
 	}
 }
 
@@ -213,16 +213,16 @@ void DX::initCmdList()
 {
 	for (int i = 0; i < frameBufferCount; i++)
 	{
-		ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator[i])));
+		device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator[i]));
 	}
 
 	// -- Create a Command List -- //
 
 	// create the command list with the first allocator
-	ThrowIfFailed(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator[0], NULL, IID_PPV_ARGS(&commandList)));
+	device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator[0], NULL, IID_PPV_ARGS(&commandList));
 
 	// command lists are created in the recording state. our main loop will set it up for recording again so close it now
-	//ThrowIfFailed(commandList->Close());
+	//commandList->Close();
 }
 
 void DX::initRTV()
@@ -234,7 +234,7 @@ void DX::initRTV()
 	// This heap will not be directly referenced by the shaders (not shader visible), as this will store the output from the pipeline
 	// otherwise we would set the heap's flag to D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE
 	rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	ThrowIfFailed(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvDescriptorHeap)));
+	device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvDescriptorHeap));
 
 	// get the size of a descriptor in this heap (this is a rtv heap, so only rtv descriptors should be stored in it.
 	// descriptor sizes may vary from device to device, which is why there is no set size and we must ask the 
@@ -255,7 +255,7 @@ void DX::createRTV_res()
 	{
 		// first we get the n'th buffer in the swap chain and store it in the n'th
 		// position of our ID3D12Resource array
-		ThrowIfFailed(swapChain->GetBuffer(i, IID_PPV_ARGS(&renderTargets[i])));
+		swapChain->GetBuffer(i, IID_PPV_ARGS(&renderTargets[i]));
 
 		// the we "create" a render target view which binds the swap chain buffer (ID3D12Resource[n]) to the rtv handle
 		device->CreateRenderTargetView(renderTargets[i], nullptr, rtvHandle);
@@ -274,7 +274,7 @@ void DX::initDSV()
     dsvHeapDesc.NumDescriptors = 1;
     dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
     dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-    ThrowIfFailed(device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap)));
+    device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsDescriptorHeap));
 
 	createDSV_res();
 }
@@ -379,11 +379,11 @@ void DX::initSwapChain(HWND hwnd, bool fullScene)
 
 	IDXGISwapChain* tempSwapChain;
 
-	ThrowIfFailed(dxgiFactory->CreateSwapChain(
+	dxgiFactory->CreateSwapChain(
 		commandQueue, // the queue will be flushed once the swap chain is created
 		&swapChainDesc, // give it the swap chain description we created above
 		&tempSwapChain // store the created swap chain in a temp IDXGISwapChain interface
-	));
+	);
 
 	swapChain = static_cast<IDXGISwapChain3*>(tempSwapChain);
 */
@@ -396,12 +396,12 @@ void DX::initQueue()
 	cqDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	cqDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT; // direct means the gpu can directly execute this command queue
 
-	ThrowIfFailed(device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&commandQueue))); // create the command queue
+	device->CreateCommandQueue(&cqDesc, IID_PPV_ARGS(&commandQueue)); // create the command queue
 }
 
 void DX::initDevice()
 {
-	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
+	CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
 
 	IDXGIAdapter1* adapter; // adapters are the graphics card (this includes the embedded graphics on the motherboard)
 	int adapterIndex = 0; // we'll start looking for directx 12  compatible graphics devices starting at index 0
@@ -430,7 +430,7 @@ void DX::initDevice()
 
 	if(adapterFound)
 	{
-		ThrowIfFailed(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)));
+		D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device));
 	}
 }
 
@@ -486,8 +486,8 @@ D3D12_INDEX_BUFFER_VIEW DX::createIndexBuffer(int iBufferSize, const void * pDat
 D3D12_VERTEX_BUFFER_VIEW DX::createVertexBuffer(int vBufferSize, int strideInBytes, const void * pData)
 {
 	//WaitForPreviousFrame();
-	//ThrowIfFailed(commandAllocator[frameIndex]->Reset());
-	//ThrowIfFailed(commandList->Reset(commandAllocator[frameIndex], NULL));
+	//commandAllocator[frameIndex]->Reset();
+	//commandList->Reset(commandAllocator[frameIndex], NULL);
 
 	ID3D12Resource* vertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
@@ -551,7 +551,7 @@ void DX::uploadRes()
 
     // increment the fence value now, otherwise the buffer might not be uploaded by the time we start drawing
     fenceValue[frameIndex]++;
-    ThrowIfFailed(commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]));
+    commandQueue->Signal(fence[frameIndex], fenceValue[frameIndex]);
 }
 
 D3D12_SHADER_BYTECODE DX::createShader(LPCWSTR pFileName, LPCSTR pTarget)
@@ -566,7 +566,7 @@ D3D12_SHADER_BYTECODE DX::createShader(LPCWSTR pFileName, LPCSTR pTarget)
 	// compile vertex shader
     ID3DBlob* shader; // d3d blob for holding vertex shader bytecode
     ID3DBlob* errorBuff; // a buffer holding the error data if any
-    ThrowIfFailed(D3DCompileFromFile(pFileName,
+    D3DCompileFromFile(pFileName,
         nullptr,
         nullptr,
         "main",
@@ -574,7 +574,7 @@ D3D12_SHADER_BYTECODE DX::createShader(LPCWSTR pFileName, LPCSTR pTarget)
         D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
         0,
         &shader,
-        &errorBuff));
+        &errorBuff);
 
     // fill out a shader bytecode structure, which is basically just a pointer
     // to the shader bytecode and the size of the shader bytecode

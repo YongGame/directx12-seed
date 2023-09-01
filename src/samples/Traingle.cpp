@@ -16,7 +16,7 @@ void Traingle::init()
     heapDesc.NumDescriptors = 4;
     heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    ThrowIfFailed(dx->device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&CBV_SRV_UAV_DescriptorHeap)));
+    dx->device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&CBV_SRV_UAV_DescriptorHeap));
     CBV_SRV_UAV_DescriptorSize = dx->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
     initRootSignature();
@@ -118,8 +118,8 @@ void Traingle::initRootSignature()
 
     ID3DBlob* errorBuff; // a buffer holding the error data if any
     ID3DBlob* signature;
-    ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &errorBuff));
-    ThrowIfFailed(dx->device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
+    D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &errorBuff);
+    dx->device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
 }
 
 void Traingle::initPSO()
@@ -170,7 +170,7 @@ void Traingle::initPSO()
     psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
     // create the pso
-    ThrowIfFailed(dx->device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateObject)));
+    dx->device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateObject));
 }
 
 void Traingle::initCBV()
@@ -186,13 +186,13 @@ void Traingle::initCBV()
     
     for (int i = 0; i < dx->frameBufferCount; ++i)
     {
-        ThrowIfFailed(dx->device->CreateCommittedResource(
+        dx->device->CreateCommittedResource(
             &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // this heap will be used to upload the constant buffer data
             D3D12_HEAP_FLAG_NONE, // no flags
             &CD3DX12_RESOURCE_DESC::Buffer(1024 * 64), // size of the resource heap. Must be a multiple of 64KB for single-textures and constant buffers
             D3D12_RESOURCE_STATE_GENERIC_READ, // will be data that is read from so we keep it in the generic read state
             nullptr, // we do not have use an optimized clear value for constant buffers
-            IID_PPV_ARGS(&constantBufferUploadHeap[i])));
+            IID_PPV_ARGS(&constantBufferUploadHeap[i]));
         constantBufferUploadHeap[i]->SetName(L"Constant Buffer Upload Resource Heap");
 
         // 描述符句柄
@@ -208,7 +208,7 @@ void Traingle::initCBV()
         ZeroMemory(&cbColorMultiplierData, sizeof(cbColorMultiplierData));
 
         CD3DX12_RANGE readRange(0, 0);    // We do not intend to read from this resource on the CPU. (End is less than or equal to begin)
-        ThrowIfFailed(constantBufferUploadHeap[i]->Map(0, &readRange, reinterpret_cast<void**>(&cbColorMultiplierGPUAddress[i])));
+        constantBufferUploadHeap[i]->Map(0, &readRange, reinterpret_cast<void**>(&cbColorMultiplierGPUAddress[i]));
         memcpy(cbColorMultiplierGPUAddress[i], &cbColorMultiplierData, sizeof(cbColorMultiplierData));
     }
 
@@ -301,9 +301,9 @@ void Traingle::initMesh()
 void Traingle::Update()
 {
     // update app logic, such as moving the camera or figuring out what objects are in view
-    static float rIncrement = 0.00002f;
-    static float gIncrement = 0.00006f;
-    static float bIncrement = 0.00009f;
+    static float rIncrement = 0.002f;
+    static float gIncrement = 0.006f;
+    static float bIncrement = 0.009f;
 
     cbColorMultiplierData.colorMultiplier.x += rIncrement;
     cbColorMultiplierData.colorMultiplier.y += gIncrement;
@@ -330,9 +330,9 @@ void Traingle::Update()
 
 
     // create rotation matrices
-    XMMATRIX rotXMat = XMMatrixRotationX(0.0000f);
-    XMMATRIX rotYMat = XMMatrixRotationY(0.0000f);
-    XMMATRIX rotZMat = XMMatrixRotationZ(0.0001f);
+    XMMATRIX rotXMat = XMMatrixRotationX(0.00f);
+    XMMATRIX rotYMat = XMMatrixRotationY(0.00f);
+    XMMATRIX rotZMat = XMMatrixRotationZ(0.01f);
 
     // add rotation to cube1's rotation matrix and store it
     XMMATRIX rotMat = XMLoadFloat4x4(&cube1RotMat) * rotXMat * rotYMat * rotZMat;
