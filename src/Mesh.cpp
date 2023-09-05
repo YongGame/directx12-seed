@@ -12,6 +12,11 @@ void Mesh::prepare()
     geom->prepare();
 }
 
+void Mesh::update()
+{
+    trans->update();
+}
+
 void Mesh::draw()
 {
     geom->draw();

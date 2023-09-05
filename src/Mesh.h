@@ -12,5 +12,6 @@ public:
 
     Mesh();
     void prepare();
+    void update();
     void draw();
 };

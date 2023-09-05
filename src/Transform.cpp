@@ -10,10 +10,13 @@ void Transform::rotateAxis(float x, float y, float z)
     rotate.x += x;
     rotate.y += y;
     rotate.z += z;
+    dirty = true;
 }
 
 void Transform::update()
 {
+    if(!dirty) return;
+
     // 平移矩阵
     XMVECTOR translateVec = XMLoadFloat4(&translate);
     XMMATRIX translateMat = XMMatrixTranslationFromVector(translateVec);

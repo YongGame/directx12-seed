@@ -31,7 +31,6 @@ class Traingle : public Sample
 {
 public:
     Camera* camera;
-    Transform* trans;
 
     Mesh* quad;
     Mesh* tri;

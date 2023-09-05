@@ -7,7 +7,6 @@ void Traingle::init()
 {
     dx = DX::dx;
     camera = new Camera(dx->width, dx->height);
-    trans = new Transform();
 
     // 同一时刻， commandList->SetDescriptorHeaps 某种类型的描述符堆只能有一个被使用。
     // 所以，每种类型的描述符最好只创建一个。也可以创建多个，只要绘制时不同时使用即可。
@@ -308,22 +307,21 @@ void Traingle::Update()
     // copy our ConstantBuffer instance to the mapped constant buffer resource
     memcpy(cbColorMultiplierGPUAddress[dx->frameIndex], &cbColorMultiplierData, sizeof(cbColorMultiplierData));
 
-
-    trans->rotateAxis(0.0f, 0.0f, 0.001f);
-    trans->update();
+    tri->trans->rotateAxis(0.0f, 0.0f, 0.01f);
+    tri->trans->update();
 
     // update constant buffer for cube1
     // create the wvp matrix and store in constant buffer
     XMMATRIX viewMat = XMLoadFloat4x4(&camera->cameraViewMat); // load view matrix
     XMMATRIX projMat = XMLoadFloat4x4(&camera->cameraProjMat); // load projection matrix
-    XMMATRIX wvpMat = trans->worldMat * viewMat * projMat; // create wvp matrix
+    XMMATRIX wvpMat = tri->trans->worldMat * viewMat * projMat; // create wvp matrix
     XMMATRIX transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
     XMStoreFloat4x4(&cbPerObject.wvpMat, transposed); // store transposed wvp matrix in constant buffer
     // copy our ConstantBuffer instance to the mapped constant buffer resource
     memcpy(cbvGPUAddress[dx->frameIndex], &cbPerObject, sizeof(cbPerObject));
 
-
-    wvpMat = trans->worldMat * viewMat * projMat; // create wvp matrix
+    quad->trans->update();
+    wvpMat = quad->trans->worldMat * viewMat * projMat; // create wvp matrix
     transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
     XMStoreFloat4x4(&cbPerObject.wvpMat, transposed); // store transposed wvp matrix in constant buffer
     // copy our ConstantBuffer instance to the mapped constant buffer resource
