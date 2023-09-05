@@ -251,27 +251,31 @@ void Traingle::resize()
 
 void Traingle::initMesh()
 {
-    // Create vertex buffer
-    Vertex vList[] = {
-        { 0.0f, 0.5f, 0.0f,     0.5f, 0.0f,   1.0f, 0.0f, 0.0f, 1.0f },
-        { 0.5f, -0.5f, 0.0f,    0.0f, 1.0f,   0.0f, 1.0f, 0.0f, 1.0f },
-        { -0.5f, -0.5f, 0.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f, 1.0f }
+    std::vector<float> triVertexs = {
+        0.0f, 0.5f, 0.0f,     0.5f, 0.0f,   1.0f, 0.0f, 0.0f, 1.0f ,
+        0.5f, -0.5f, 0.0f,    0.0f, 1.0f,   0.0f, 1.0f, 0.0f, 1.0f ,
+        -0.5f, -0.5f, 0.0f,   1.0f, 1.0f,   0.0f, 0.0f, 1.0f, 1.0f 
     };
-    Vertex vList2[] = {
-        { -1.0f, 1.0f, 1.0f,    0.0f, 0.0f,     1.0f, 0.0f, 0.0f, 1.0f },
-        { 1.0f, 1.0f, 1.0f,     1.0f, 0.0f,     1.0f, 0.0f, 0.0f, 1.0f },
-        { 1.0f, -1.0f, 1.0f,    1.0f, 1.0f,     1.0f, 0.0f, 0.0f, 1.0f }, 
-        { -1.0f, -1.0f, 1.0f,   0.0f, 1.0f,     1.0f, 0.0f, 0.0f, 1.0f } 
+
+    tri = new Mesh();
+    tri->geom->setVertexs(triVertexs);
+    tri->prepare();
+
+    std::vector<float> quadVertexs = {
+        -1.0f, 1.0f, 1.0f,    0.0f, 0.0f,     1.0f, 0.0f, 0.0f, 1.0f ,
+        1.0f, 1.0f, 1.0f,     1.0f, 0.0f,     1.0f, 0.0f, 0.0f, 1.0f ,
+        1.0f, -1.0f, 1.0f,    1.0f, 1.0f,     1.0f, 0.0f, 0.0f, 1.0f , 
+        -1.0f, -1.0f, 1.0f,   0.0f, 1.0f,     1.0f, 0.0f, 0.0f, 1.0f  
     };
-    DWORD iList2[] = {
+    std::vector<int> quadIndices = {
         0, 1, 2, // first triangle
         0, 2, 3 // second triangle
     };
-    // triangle
-    vertexBufferView = dx->createVertexBuffer(sizeof(vList), sizeof(Vertex), reinterpret_cast<BYTE*>(vList));
-    // quad
-    vertexBufferView2 = dx->createVertexBuffer(sizeof(vList2), sizeof(Vertex), reinterpret_cast<BYTE*>(vList2));
-    indexBufferView2 = dx->createIndexBuffer(sizeof(iList2), reinterpret_cast<BYTE*>(iList2));
+
+    quad = new Mesh();
+    quad->geom->setVertexs(quadVertexs);
+    quad->geom->setIndices(quadIndices);
+    quad->prepare();
 }
 
 void Traingle::Update()
@@ -347,14 +351,11 @@ void Traingle::UpdatePipeline()
     commandList->SetGraphicsRootConstantBufferView(1, constantBufferUploadHeaps[dx->frameIndex]->GetGPUVirtualAddress());
 
     // draw
-    commandList->IASetVertexBuffers(0, 1, &vertexBufferView); // set the vertex buffer (using the vertex buffer view)
-    commandList->DrawInstanced(3, 1, 0, 0); // finally draw 3 vertices (draw the triangle)
+    tri->draw();
 
     // mvp
     commandList->SetGraphicsRootConstantBufferView(1, constantBufferUploadHeaps[dx->frameIndex]->GetGPUVirtualAddress() + ConstantBufferPerObjectAlignedSize);
 
     // draw
-    commandList->IASetVertexBuffers(0, 1, &vertexBufferView2); // set the vertex buffer (using the vertex buffer view)
-    commandList->IASetIndexBuffer(&indexBufferView2);
-    commandList->DrawIndexedInstanced(6, 1, 0, 0, 0); // finally draw 3 vertices (draw the triangle)
+    quad->draw();
 }

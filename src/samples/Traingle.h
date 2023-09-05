@@ -2,6 +2,8 @@
 #include "Sample.h"
 #include "Camera.h"
 #include "Transform.h"
+#include "Mesh.h"
+
 #include "DX.h"
 
 class Texture;
@@ -31,14 +33,11 @@ public:
     Camera* camera;
     Transform* trans;
 
+    Mesh* quad;
+    Mesh* tri;
+
     ID3D12PipelineState* pipelineStateObject;
     ID3D12RootSignature* rootSignature;
-    
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView;
-
-    D3D12_VERTEX_BUFFER_VIEW vertexBufferView2;
-    D3D12_INDEX_BUFFER_VIEW indexBufferView2; // a structure holding information about the index buffer
-
     
     int CBV_SRV_UAV_DescriptorSize;
     ID3D12DescriptorHeap* CBV_SRV_UAV_DescriptorHeap; 
