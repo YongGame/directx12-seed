@@ -6,7 +6,7 @@
 void Traingle::init()
 {
     dx = DX::dx;
-
+    camera = new Camera(dx->width, dx->height);
     // 同一时刻， commandList->SetDescriptorHeaps 某种类型的描述符堆只能有一个被使用。
     // 所以，每种类型的描述符最好只创建一个。也可以创建多个，只要绘制时不同时使用即可。
     // 创建4个 D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV 类型的描述符
@@ -241,28 +241,14 @@ void Traingle::initCBV()
         memcpy(cbvGPUAddress[i] + ConstantBufferPerObjectAlignedSize, &cbPerObject, sizeof(cbPerObject)); // cube2's constant buffer data
     }
 
-    // build projection and view matrix
-    XMMATRIX tmpMat = XMMatrixPerspectiveFovLH(45.0f*(3.14f/180.0f), float(dx->width) / float(dx->height), 0.1f, 1000.0f);
-    XMStoreFloat4x4(&cameraProjMat, tmpMat);
-
-    // set starting camera state
-    cameraPosition = XMFLOAT4(0.0f, 0.0f, -4.0f, 0.0f);
-    cameraTarget = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-    cameraUp = XMFLOAT4(0.0f, 1.0f, 0.0f, 0.0f);
-
-    // build view matrix
-    XMVECTOR cPos = XMLoadFloat4(&cameraPosition);
-    XMVECTOR cTarg = XMLoadFloat4(&cameraTarget);
-    XMVECTOR cUp = XMLoadFloat4(&cameraUp);
-    tmpMat = XMMatrixLookAtLH(cPos, cTarg, cUp);
-    XMStoreFloat4x4(&cameraViewMat, tmpMat);
+    
 
     // set starting cubes position
     // first cube
     cube1Position = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f); // set cube 1's position
     XMVECTOR posVec = XMLoadFloat4(&cube1Position); // create xmvector for cube1's position
 
-    tmpMat = XMMatrixTranslationFromVector(posVec); // create translation matrix from cube1's position vector
+    XMMATRIX tmpMat = XMMatrixTranslationFromVector(posVec); // create translation matrix from cube1's position vector
     XMStoreFloat4x4(&cube1RotMat, XMMatrixIdentity()); // initialize cube1's rotation matrix to identity matrix
     XMStoreFloat4x4(&cube1WorldMat, tmpMat); // store cube1's world matrix
 
@@ -278,9 +264,7 @@ void Traingle::initCBV()
 
 void Traingle::resize()
 {
-    // build projection and view matrix
-    XMMATRIX tmpMat = XMMatrixPerspectiveFovLH(45.0f*(3.14f/180.0f), float(dx->width) / float(dx->height), 0.1f, 1000.0f);
-    XMStoreFloat4x4(&cameraProjMat, tmpMat);
+    camera->resize(dx->width, dx->height);
 }
 
 void Traingle::initMesh()
@@ -359,8 +343,8 @@ void Traingle::Update()
 
     // update constant buffer for cube1
     // create the wvp matrix and store in constant buffer
-    XMMATRIX viewMat = XMLoadFloat4x4(&cameraViewMat); // load view matrix
-    XMMATRIX projMat = XMLoadFloat4x4(&cameraProjMat); // load projection matrix
+    XMMATRIX viewMat = XMLoadFloat4x4(&camera->cameraViewMat); // load view matrix
+    XMMATRIX projMat = XMLoadFloat4x4(&camera->cameraProjMat); // load projection matrix
     XMMATRIX wvpMat = XMLoadFloat4x4(&cube1WorldMat) * viewMat * projMat; // create wvp matrix
     XMMATRIX transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
     XMStoreFloat4x4(&cbPerObject.wvpMat, transposed); // store transposed wvp matrix in constant buffer

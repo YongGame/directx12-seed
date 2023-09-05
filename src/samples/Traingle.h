@@ -1,5 +1,6 @@
 #pragma once
 #include "Sample.h"
+#include "Camera.h"
 #include "DX.h"
 
 class Texture;
@@ -26,6 +27,8 @@ struct Vertex {
 class Traingle : public Sample
 {
 public:
+    Camera* camera;
+
     ID3D12PipelineState* pipelineStateObject;
     ID3D12RootSignature* rootSignature;
     
@@ -63,12 +66,7 @@ public:
 
     UINT8* cbvGPUAddress[3]; // this is a pointer to each of the constant buffer resource heaps
 
-    XMFLOAT4X4 cameraProjMat; // this will store our projection matrix
-    XMFLOAT4X4 cameraViewMat; // this will store our view matrix
-
-    XMFLOAT4 cameraPosition; // this is our cameras position vector
-    XMFLOAT4 cameraTarget; // a vector describing the point in space our camera is looking at
-    XMFLOAT4 cameraUp; // the worlds up vector
+    
 
     XMFLOAT4X4 cube1WorldMat; // our first cubes world matrix (transformation matrix)
     XMFLOAT4X4 cube1RotMat; // this will keep track of our rotation for the first cube
