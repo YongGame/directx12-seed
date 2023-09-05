@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "Transform.h"
 #include "Mesh.h"
+#include "Shader.h"
 
 #include "DX.h"
 
@@ -34,6 +35,7 @@ public:
 
     Mesh* quad;
     Mesh* tri;
+    Shader* shader;
 
     ID3D12PipelineState* pipelineStateObject;
     ID3D12RootSignature* rootSignature;

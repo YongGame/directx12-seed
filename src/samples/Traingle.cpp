@@ -125,9 +125,9 @@ void Traingle::initRootSignature()
 
 void Traingle::initPSO()
 {
-    // create vertex and pixel shaders
-    D3D12_SHADER_BYTECODE vertexShaderBytecode = dx->createShader(L"D://cc/directx12-seed/assets/VertexShader.hlsl", "vs_5_0");
-    D3D12_SHADER_BYTECODE pixelShaderBytecode = dx->createShader(L"D://cc/directx12-seed/assets/PixelShader.hlsl", "ps_5_0");
+    shader = new Shader();
+    shader->setVertexShader(L"D://cc/directx12-seed/assets/VertexShader.hlsl");
+    shader->setPixelShader(L"D://cc/directx12-seed/assets/PixelShader.hlsl");
 
     // create input layout
     D3D12_INPUT_ELEMENT_DESC inputLayout[] =
@@ -161,8 +161,8 @@ void Traingle::initPSO()
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {}; // a structure to define a pso
     psoDesc.InputLayout = inputLayoutDesc; // the structure describing our input layout
     psoDesc.pRootSignature = rootSignature; // the root signature that describes the input data this pso needs
-    psoDesc.VS = vertexShaderBytecode; // structure describing where to find the vertex shader bytecode and how large it is
-    psoDesc.PS = pixelShaderBytecode; // same as VS but for pixel shader
+    psoDesc.VS = shader->vertexShaderBytecode; // structure describing where to find the vertex shader bytecode and how large it is
+    psoDesc.PS = shader->pixelShaderBytecode; // same as VS but for pixel shader
     psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; // type of topology we are drawing
     psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the render target
     psoDesc.SampleDesc = sampleDesc; // must be the same sample description as the swapchain and depth/stencil buffer

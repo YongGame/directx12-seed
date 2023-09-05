@@ -64,9 +64,7 @@ public:
     void WaitForLastSubmittedFrame(int index);
     void resize(int w, int h);
     void destory();
-
     
-    D3D12_SHADER_BYTECODE createShader(LPCWSTR pFileName, LPCSTR pTarget);
     void uploadRes();
 
     void init_RTV_DESC_HEAP();
