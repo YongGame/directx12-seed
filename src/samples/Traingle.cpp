@@ -7,6 +7,8 @@ void Traingle::init()
 {
     dx = DX::dx;
     camera = new Camera(dx->width, dx->height);
+    trans = new Transform();
+
     // 同一时刻， commandList->SetDescriptorHeaps 某种类型的描述符堆只能有一个被使用。
     // 所以，每种类型的描述符最好只创建一个。也可以创建多个，只要绘制时不同时使用即可。
     // 创建4个 D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV 类型的描述符
@@ -240,26 +242,6 @@ void Traingle::initCBV()
         memcpy(cbvGPUAddress[i], &cbPerObject, sizeof(cbPerObject)); // cube1's constant buffer data
         memcpy(cbvGPUAddress[i] + ConstantBufferPerObjectAlignedSize, &cbPerObject, sizeof(cbPerObject)); // cube2's constant buffer data
     }
-
-    
-
-    // set starting cubes position
-    // first cube
-    cube1Position = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f); // set cube 1's position
-    XMVECTOR posVec = XMLoadFloat4(&cube1Position); // create xmvector for cube1's position
-
-    XMMATRIX tmpMat = XMMatrixTranslationFromVector(posVec); // create translation matrix from cube1's position vector
-    XMStoreFloat4x4(&cube1RotMat, XMMatrixIdentity()); // initialize cube1's rotation matrix to identity matrix
-    XMStoreFloat4x4(&cube1WorldMat, tmpMat); // store cube1's world matrix
-
-    // second cube
-    cube2PositionOffset = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
-    posVec = XMLoadFloat4(&cube2PositionOffset) + XMLoadFloat4(&cube1Position); // create xmvector for cube2's position
-                                                                                // we are rotating around cube1 here, so add cube2's position to cube1
-
-    tmpMat = XMMatrixTranslationFromVector(posVec); // create translation matrix from cube2's position offset vector
-    XMStoreFloat4x4(&cube2RotMat, XMMatrixIdentity()); // initialize cube2's rotation matrix to identity matrix
-    XMStoreFloat4x4(&cube2WorldMat, tmpMat); // store cube2's world matrix
 }
 
 void Traingle::resize()
@@ -323,67 +305,25 @@ void Traingle::Update()
     memcpy(cbColorMultiplierGPUAddress[dx->frameIndex], &cbColorMultiplierData, sizeof(cbColorMultiplierData));
 
 
-    // create rotation matrices
-    XMMATRIX rotXMat = XMMatrixRotationX(0.00f);
-    XMMATRIX rotYMat = XMMatrixRotationY(0.00f);
-    XMMATRIX rotZMat = XMMatrixRotationZ(0.01f);
-
-    // add rotation to cube1's rotation matrix and store it
-    XMMATRIX rotMat = XMLoadFloat4x4(&cube1RotMat) * rotXMat * rotYMat * rotZMat;
-    XMStoreFloat4x4(&cube1RotMat, rotMat);
-
-    // create translation matrix for cube 1 from cube 1's position vector
-    XMMATRIX translationMat = XMMatrixTranslationFromVector(XMLoadFloat4(&cube1Position));
-
-    // create cube1's world matrix by first rotating the cube, then positioning the rotated cube
-    XMMATRIX worldMat = rotMat * translationMat;
-
-    // store cube1's world matrix
-    XMStoreFloat4x4(&cube1WorldMat, worldMat);
+    trans->rotateAxis(0.0f, 0.0f, 0.001f);
+    trans->update();
 
     // update constant buffer for cube1
     // create the wvp matrix and store in constant buffer
     XMMATRIX viewMat = XMLoadFloat4x4(&camera->cameraViewMat); // load view matrix
     XMMATRIX projMat = XMLoadFloat4x4(&camera->cameraProjMat); // load projection matrix
-    XMMATRIX wvpMat = XMLoadFloat4x4(&cube1WorldMat) * viewMat * projMat; // create wvp matrix
+    XMMATRIX wvpMat = trans->worldMat * viewMat * projMat; // create wvp matrix
     XMMATRIX transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
     XMStoreFloat4x4(&cbPerObject.wvpMat, transposed); // store transposed wvp matrix in constant buffer
-
     // copy our ConstantBuffer instance to the mapped constant buffer resource
     memcpy(cbvGPUAddress[dx->frameIndex], &cbPerObject, sizeof(cbPerObject));
 
-    // now do cube2's world matrix
-    // create rotation matrices for cube2
-    rotXMat = XMMatrixRotationX(0.0000f);
-    rotYMat = XMMatrixRotationY(0.0000f);
-    rotZMat = XMMatrixRotationZ(0.0000f);
 
-    // add rotation to cube2's rotation matrix and store it
-    rotMat = rotZMat * (XMLoadFloat4x4(&cube2RotMat) * (rotXMat * rotYMat));
-    XMStoreFloat4x4(&cube2RotMat, rotMat);
-
-    // create translation matrix for cube 2 to offset it from cube 1 (its position relative to cube1
-    XMMATRIX translationOffsetMat = XMMatrixTranslationFromVector(XMLoadFloat4(&cube2PositionOffset));
-
-    // we want cube 2 to be half the size of cube 1, so we scale it by .5 in all dimensions
-    XMMATRIX scaleMat = XMMatrixScaling(1.0f, 1.0f, 1.0f);
-
-    // reuse worldMat. 
-    // first we scale cube2. scaling happens relative to point 0,0,0, so you will almost always want to scale first
-    // then we translate it. 
-    // then we rotate it. rotation always rotates around point 0,0,0
-    // finally we move it to cube 1's position, which will cause it to rotate around cube 1
-    worldMat = scaleMat * translationOffsetMat * rotMat * translationMat;
-
-    wvpMat = XMLoadFloat4x4(&cube2WorldMat) * viewMat * projMat; // create wvp matrix
+    wvpMat = trans->worldMat * viewMat * projMat; // create wvp matrix
     transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
     XMStoreFloat4x4(&cbPerObject.wvpMat, transposed); // store transposed wvp matrix in constant buffer
-
     // copy our ConstantBuffer instance to the mapped constant buffer resource
     memcpy(cbvGPUAddress[dx->frameIndex] + ConstantBufferPerObjectAlignedSize, &cbPerObject, sizeof(cbPerObject));
-
-    // store cube2's world matrix
-    XMStoreFloat4x4(&cube2WorldMat, worldMat);
 }
 
 void Traingle::UpdatePipeline()

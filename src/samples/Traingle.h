@@ -1,6 +1,7 @@
 #pragma once
 #include "Sample.h"
 #include "Camera.h"
+#include "Transform.h"
 #include "DX.h"
 
 class Texture;
@@ -28,6 +29,7 @@ class Traingle : public Sample
 {
 public:
     Camera* camera;
+    Transform* trans;
 
     ID3D12PipelineState* pipelineStateObject;
     ID3D12RootSignature* rootSignature;
@@ -66,15 +68,6 @@ public:
 
     UINT8* cbvGPUAddress[3]; // this is a pointer to each of the constant buffer resource heaps
 
-    
-
-    XMFLOAT4X4 cube1WorldMat; // our first cubes world matrix (transformation matrix)
-    XMFLOAT4X4 cube1RotMat; // this will keep track of our rotation for the first cube
-    XMFLOAT4 cube1Position; // our first cubes position in space
-
-    XMFLOAT4X4 cube2WorldMat; // our first cubes world matrix (transformation matrix)
-    XMFLOAT4X4 cube2RotMat; // this will keep track of our rotation for the second cube
-    XMFLOAT4 cube2PositionOffset; // our second cube will rotate around the first cube, so this is the position offset from the first cube
 
     int numCubeIndices; // the number of indices to draw the cube
 
