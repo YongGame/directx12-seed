@@ -11,11 +11,15 @@
 class Texture
 {
 public:
+    // 描述符句柄
+    int handleIndex;
+
+
     BYTE* imageData;
     ID3D12Resource* textureBuffer; // the resource heap containing our texture
     ID3D12Resource* textureBufferUploadHeap;
 
-    Texture(LPCWSTR filename, CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle);
+    Texture(LPCWSTR filename);
     int LoadImageDataFromFile(BYTE** imageData, D3D12_RESOURCE_DESC& resourceDescription, LPCWSTR filename, int &bytesPerRow);
     DXGI_FORMAT GetDXGIFormatFromWICFormat(WICPixelFormatGUID& wicFormatGUID);
     WICPixelFormatGUID GetConvertToWICFormat(WICPixelFormatGUID& wicFormatGUID);

@@ -10,4 +10,6 @@ public:
 
     Texture* diffuse;
     UnlitMat(LPCWSTR filename);
+
+    virtual void apply();
 };

@@ -1,5 +1,5 @@
 #pragma once
-
+#include <vector>
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <D3Dcompiler.h>
@@ -26,6 +26,18 @@ public:
 
     int frameIndex;
     const static int frameBufferCount = 3;
+
+    // 创建2个 CBV_SRV_UAV 全局描述符堆，一个GPU不可见，一个GPU可见，前者用来索引全局资源，后者用来索引本帧绘制所涉及的资源
+    int CBV_SRV_UAV_DescriptorSize;
+    std::vector<int> g_CPU_CBV_SRV_UAV_DescriptorUsing;
+    std::vector<int> g_CPU_CBV_SRV_UAV_DescriptorPool;
+    ID3D12DescriptorHeap* g_CPU_CBV_SRV_UAV_DescriptorHeap; 
+    ID3D12DescriptorHeap* g_GPU_CBV_SRV_UAV_DescriptorHeap; 
+    int getDescHandleIndex(); // 获得一个描述符索引
+    CD3DX12_CPU_DESCRIPTOR_HANDLE getDescHandle(int idx); 
+    int gpuHandleIndex;
+    CD3DX12_GPU_DESCRIPTOR_HANDLE getGpuHandle(int cpuIndex);
+    
 
     Sample* sample;
     
@@ -78,4 +90,5 @@ private:
     void initSwapChain(HWND hwnd, bool fullScene);
 	void initCmdList();
 	void initFence();
+	void initDescHeap();
 };

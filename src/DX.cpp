@@ -39,6 +39,8 @@ void DX::init(HWND hwnd, int w, int h, bool fullScene)
 	initCmdList();
 	initFence();
 
+	initDescHeap();
+
 	sample->init();
 
 	// Fill out the Viewport
@@ -54,6 +56,50 @@ void DX::init(HWND hwnd, int w, int h, bool fullScene)
     scissorRect.top = 0;
     scissorRect.right = w;
     scissorRect.bottom = h;
+}
+
+void DX::initDescHeap()
+{
+	D3D12_DESCRIPTOR_HEAP_DESC cpuHeapDesc = {};
+    cpuHeapDesc.NumDescriptors = 1000;
+    cpuHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+    cpuHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV; // GPU不可见
+    dx->device->CreateDescriptorHeap(&cpuHeapDesc, IID_PPV_ARGS(&g_CPU_CBV_SRV_UAV_DescriptorHeap));
+    CBV_SRV_UAV_DescriptorSize = dx->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	for(int i=999; i>=0; i--) g_CPU_CBV_SRV_UAV_DescriptorPool.push_back(i);
+
+	D3D12_DESCRIPTOR_HEAP_DESC gpuHeapDesc = {};
+    gpuHeapDesc.NumDescriptors = 1000;
+    gpuHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE; // GPU可见
+    gpuHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+    dx->device->CreateDescriptorHeap(&gpuHeapDesc, IID_PPV_ARGS(&g_GPU_CBV_SRV_UAV_DescriptorHeap));
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE DX::getGpuHandle(int cpuIndex)
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle(g_CPU_CBV_SRV_UAV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), cpuIndex, CBV_SRV_UAV_DescriptorSize);
+	CD3DX12_CPU_DESCRIPTOR_HANDLE gpuHandle(g_GPU_CBV_SRV_UAV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), gpuHandleIndex, CBV_SRV_UAV_DescriptorSize);
+	device->CopyDescriptorsSimple(1, gpuHandle, cpuHandle, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE handle(g_GPU_CBV_SRV_UAV_DescriptorHeap->GetGPUDescriptorHandleForHeapStart(), gpuHandleIndex, CBV_SRV_UAV_DescriptorSize);
+	gpuHandleIndex++;
+	return handle;
+}
+
+CD3DX12_CPU_DESCRIPTOR_HANDLE DX::getDescHandle(int idx)
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(g_CPU_CBV_SRV_UAV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), idx, CBV_SRV_UAV_DescriptorSize);
+	return handle;
+}
+
+int DX::getDescHandleIndex()
+{
+	int index = g_CPU_CBV_SRV_UAV_DescriptorPool[g_CPU_CBV_SRV_UAV_DescriptorPool.size()-1];
+
+	g_CPU_CBV_SRV_UAV_DescriptorUsing.push_back(index);
+	g_CPU_CBV_SRV_UAV_DescriptorPool.pop_back();
+	return index;
 }
 
 void DX::Update()
@@ -88,6 +134,8 @@ void DX::Render()
 
 void DX::UpdatePipeline()
 {
+	gpuHandleIndex = 0;
+
 	// We have to wait for the gpu to finish with the command allocator before we reset it
 	WaitForPreviousFrame();
 

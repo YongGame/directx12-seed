@@ -9,23 +9,8 @@ void Traingle::init()
     dx = DX::dx;
     camera = new Camera(dx->width, dx->height);
 
-    // 同一时刻， commandList->SetDescriptorHeaps 某种类型的描述符堆只能有一个被使用。
-    // 所以，每种类型的描述符最好只创建一个。也可以创建多个，只要绘制时不同时使用即可。
-    // 创建4个 D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV 类型的描述符
-    // 前面三个指向动态颜色值，每个后备缓冲对应一个
-    // 第四个指向纹理
-    D3D12_DESCRIPTOR_HEAP_DESC heapDesc = {};
-    heapDesc.NumDescriptors = 4;
-    heapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    heapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    dx->device->CreateDescriptorHeap(&heapDesc, IID_PPV_ARGS(&CBV_SRV_UAV_DescriptorHeap));
-    CBV_SRV_UAV_DescriptorSize = dx->device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
     initMesh(); // 顶点 索引缓冲，对于静态网格数据，最好从Upload上传至Default，性能最佳，相关上传指令需要记录到cmdList中
     initCBV(); // 对于每帧都需要更新的，仅使用Upload，不需要上传指令
-
-    CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(CBV_SRV_UAV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 3, CBV_SRV_UAV_DescriptorSize);
-    tex = new Texture(L"D://cc/directx12-seed/assets/braynzar.jpg", cbvHandle);
 
     // 执行 buffer tex 初始化涉及的相关指令，从而保证相关资源在使用时处于可访问状态
     dx->uploadRes();
@@ -164,21 +149,18 @@ void Traingle::UpdatePipeline()
     auto commandList = dx->commandList;
     commandList->SetPipelineState(UnlitMat::pso->pipelineStateObject);
 
-    // 设定相关的描述符堆
-    ID3D12DescriptorHeap* descriptorHeaps[] = { CBV_SRV_UAV_DescriptorHeap };
+    // 设定相关的描述符堆  同一时刻，同种类型的描述符堆只能有一个被使用
+    ID3D12DescriptorHeap* descriptorHeaps[] = { DX::dx->g_GPU_CBV_SRV_UAV_DescriptorHeap };
     commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
     // 设置根描述符
     commandList->SetGraphicsRootSignature(UnlitMat::pso->rootSignature); 
-    // 根描述符参数0
+    // 根描述符 参数0，不使用句柄
     commandList->SetGraphicsRootConstantBufferView(0, constantBufferUploadHeap[dx->frameIndex]->GetGPUVirtualAddress());
-    
-    // 根描述符参数1，没有创建描述符堆， mvp
+    // 根描述符 参数1，不使用句柄
     commandList->SetGraphicsRootConstantBufferView(1, constantBufferUploadHeaps[dx->frameIndex]->GetGPUVirtualAddress());
 
-    // 根描述符参数2
-    CD3DX12_GPU_DESCRIPTOR_HANDLE cbvHandle2(CBV_SRV_UAV_DescriptorHeap->GetGPUDescriptorHandleForHeapStart(), 3, CBV_SRV_UAV_DescriptorSize);
-    commandList->SetGraphicsRootDescriptorTable(2, cbvHandle2);
+    
 
     // draw
     tri->draw();

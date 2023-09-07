@@ -3,7 +3,6 @@
 Mesh::Mesh()
 {
     geom = new Geometry();
-    mat = new Material();
     trans = new Transform();
 }
 
@@ -19,6 +18,7 @@ void Mesh::update()
 
 void Mesh::draw()
 {
+    mat->apply();
     geom->draw();
 }
 

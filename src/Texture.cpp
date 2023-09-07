@@ -1,7 +1,7 @@
 #include "Texture.h"
 #include "DX.h"
 
-Texture::Texture(LPCWSTR filename, CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle)
+Texture::Texture(LPCWSTR filename)
 {
 	ID3D12Device* device = DX::dx->device;
 	ID3D12GraphicsCommandList* commandList = DX::dx->commandList;
@@ -63,7 +63,10 @@ Texture::Texture(LPCWSTR filename, CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle)
 	srvDesc.Format = textureDesc.Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
-	device->CreateShaderResourceView(textureBuffer, &srvDesc, cbvHandle);
+
+	handleIndex = DX::dx->getDescHandleIndex();
+
+	device->CreateShaderResourceView(textureBuffer, &srvDesc, DX::dx->getDescHandle(handleIndex));
 }
 
 // load and decode image from file
@@ -72,7 +75,7 @@ int Texture::LoadImageDataFromFile(BYTE** imageData, D3D12_RESOURCE_DESC& resour
 	HRESULT hr;
 
 	// we only need one instance of the imaging factory to create decoders and frames
-	static IWICImagingFactory *wicFactory;
+	IWICImagingFactory *wicFactory = NULL;
 
 	// reset decoder, frame, and converter, since these will be different for each image we load
 	IWICBitmapDecoder *wicDecoder = NULL;

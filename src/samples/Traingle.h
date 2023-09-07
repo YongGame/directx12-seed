@@ -36,9 +36,6 @@ public:
     Mesh* quad;
     Mesh* tri;
     Shader* shader;
-    
-    int CBV_SRV_UAV_DescriptorSize;
-    ID3D12DescriptorHeap* CBV_SRV_UAV_DescriptorHeap; 
 
     // frameBufferCount = 3
     ID3D12Resource* constantBufferUploadHeap[3]; // this is the memory on the gpu where our constant buffer will be placed.
@@ -63,11 +60,6 @@ public:
     ID3D12Resource* constantBufferUploadHeaps[3]; // this is the memory on the gpu where constant buffers for each frame will be placed
 
     UINT8* cbvGPUAddress[3]; // this is a pointer to each of the constant buffer resource heaps
-
-
-    int numCubeIndices; // the number of indices to draw the cube
-
-    Texture* tex;
 
     virtual void init();
     virtual void Update();
