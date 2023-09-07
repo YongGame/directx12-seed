@@ -19,35 +19,12 @@ void Traingle::init()
 
 void Traingle::initCBV()
 {
+    // 在确定 根签名的时候， 可以确定传入的数据类型
     cameraRes[0].CreateCommittedResource_UPLOAD(L"cameraCBV", 1024*64);
     cameraRes[1].CreateCommittedResource_UPLOAD(L"cameraCBV", 1024*64);
     cameraRes[2].CreateCommittedResource_UPLOAD(L"cameraCBV", 1024*64);
 
-
-    for (int i = 0; i < dx->frameBufferCount; ++i)
-    {
-        // create resource for cube 1
-        dx->device->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // this heap will be used to upload the constant buffer data
-            D3D12_HEAP_FLAG_NONE, // no flags
-            &CD3DX12_RESOURCE_DESC::Buffer(1024 * 64), // size of the resource heap. Must be a multiple of 64KB for single-textures and constant buffers
-            D3D12_RESOURCE_STATE_GENERIC_READ, // will be data that is read from so we keep it in the generic read state
-            nullptr, // we do not have use an optimized clear value for constant buffers
-            IID_PPV_ARGS(&objBufferRes[i]));
-        objBufferRes[i]->SetName(L"Constant Buffer Upload Resource Heap");
-
-        ZeroMemory(&cbPerObject, sizeof(cbPerObject));
-
-        CD3DX12_RANGE readRange(0, 0);    // We do not intend to read from this resource on the CPU. (so end is less than or equal to begin)
-        
-        // map the resource heap to get a gpu virtual address to the beginning of the heap
-        objBufferRes[i]->Map(0, &readRange, reinterpret_cast<void**>(&objBufferResAddress[i]));
-
-        // Because of the constant read alignment requirements, constant buffer views must be 256 bit aligned. Our buffers are smaller than 256 bits,
-        // so we need to add spacing between the two buffers, so that the second buffer starts at 256 bits from the beginning of the resource heap.
-        memcpy(objBufferResAddress[i], &cbPerObject, sizeof(cbPerObject)); // cube1's constant buffer data
-        memcpy(objBufferResAddress[i] + ConstantBufferPerObjectAlignedSize, &cbPerObject, sizeof(cbPerObject)); // cube2's constant buffer data
-    }
+    objsRes.CreateCommittedResource_UPLOAD(L"objsCBV", 1024*64);
 }
 
 void Traingle::resize()
@@ -94,26 +71,16 @@ void Traingle::Update()
 {
     cameraBufferData.projMat = camera->cameraProjMat;
     cameraBufferData.viewMat = camera->cameraViewMat;
-    // copy our ConstantBuffer instance to the mapped constant buffer resource
     memcpy(cameraRes[dx->frameIndex].resAddress, &cameraBufferData, sizeof(cameraBufferData));
 
+    
     tri->trans->rotateAxis(0.0f, 0.0f, 0.01f);
-    tri->trans->update();
-
-    // update constant buffer for cube1
-    // create the wvp matrix and store in constant buffer
-    //XMMATRIX viewMat = XMLoadFloat4x4(&camera->cameraViewMat); // load view matrix
-    //XMMATRIX projMat = XMLoadFloat4x4(&camera->cameraProjMat); // load projection matrix
-    //XMMATRIX wvpMat = tri->trans->worldMat * viewMat * projMat; // create wvp matrix
-    //XMMATRIX transposed = XMMatrixTranspose(wvpMat); // must transpose wvp matrix for the gpu
-    //XMStoreFloat4x4(&cbPerObject.wvpMat, transposed); // store transposed wvp matrix in constant buffer
-    // copy our ConstantBuffer instance to the mapped constant buffer resource
-    XMStoreFloat4x4(&cbPerObject.modelMat, tri->trans->worldMat);
-    memcpy(objBufferResAddress[dx->frameIndex], &cbPerObject, sizeof(cbPerObject));
-
-    quad->trans->update();
-    XMStoreFloat4x4(&cbPerObject.modelMat, quad->trans->worldMat);
-    memcpy(objBufferResAddress[dx->frameIndex] + ConstantBufferPerObjectAlignedSize, &cbPerObject, sizeof(cbPerObject));
+    for(int i=0; i<scene->meshs.size(); i++)
+    {
+        scene->meshs[i]->trans->update();
+        XMStoreFloat4x4(&cbPerObject.modelMat, scene->meshs[i]->trans->worldMat);
+        memcpy(objsRes.resAddress + ConstantBufferPerObjectAlignedSize * i, &cbPerObject, sizeof(cbPerObject));
+    }
 }
 
 void Traingle::UpdatePipeline()
@@ -131,13 +98,13 @@ void Traingle::UpdatePipeline()
     // 根描述符 参数0，不使用句柄
     commandList->SetGraphicsRootConstantBufferView(0, cameraRes[dx->frameIndex].gpuAddress);
     // 根描述符 参数1，不使用句柄
-    commandList->SetGraphicsRootConstantBufferView(1, objBufferRes[dx->frameIndex]->GetGPUVirtualAddress());
+    commandList->SetGraphicsRootConstantBufferView(1, objsRes.gpuAddress);
 
     // draw
     tri->draw();
 
     // mvp
-    commandList->SetGraphicsRootConstantBufferView(1, objBufferRes[dx->frameIndex]->GetGPUVirtualAddress() + ConstantBufferPerObjectAlignedSize);
+    commandList->SetGraphicsRootConstantBufferView(1, objsRes.gpuAddress + ConstantBufferPerObjectAlignedSize);
 
     // draw
     quad->draw();

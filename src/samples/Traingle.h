@@ -39,7 +39,7 @@ public:
     Mesh* tri;
     Shader* shader;
 
-    
+
     CameraConstantBuffer cameraBufferData;
 
 
@@ -57,11 +57,8 @@ public:
     ConstantBufferPerObject cbPerObject; // this is the constant buffer data we will send to the gpu 
                                             // (which will be placed in the resource we created above)
 
-    ID3D12Resource* objBufferRes[3]; // this is the memory on the gpu where constant buffers for each frame will be placed
-
-    UINT8* objBufferResAddress[3]; // this is a pointer to each of the constant buffer resource heaps
-
     Res cameraRes[3];
+    Res objsRes;
 
     virtual void init();
     virtual void Update();
