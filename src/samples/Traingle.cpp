@@ -7,6 +7,7 @@
 void Traingle::init()
 {
     dx = DX::dx;
+    scene = new Scene();
     camera = new Camera(dx->width, dx->height);
 
     initMesh(); // 顶点 索引缓冲，对于静态网格数据，最好从Upload上传至Default，性能最佳，相关上传指令需要记录到cmdList中
@@ -100,6 +101,8 @@ void Traingle::initMesh()
     tri->prepare();
     tri->mat = new UnlitMat(L"D://cc/directx12-seed/assets/braynzar.jpg");
 
+    scene->add(tri);
+
     std::vector<float> quadVertexs = {
         -1.0f, 1.0f, 1.0f,    0.0f, 0.0f,     1.0f, 0.0f, 0.0f, 1.0f ,
         1.0f, 1.0f, 1.0f,     1.0f, 0.0f,     1.0f, 0.0f, 0.0f, 1.0f ,
@@ -116,6 +119,8 @@ void Traingle::initMesh()
     quad->geom->setIndices(quadIndices);
     quad->prepare();
     quad->mat = new UnlitMat(L"D://cc/directx12-seed/assets/braynzar.jpg");
+
+    scene->add(quad);
 }
 
 void Traingle::Update()
@@ -146,21 +151,25 @@ void Traingle::Update()
 
 void Traingle::UpdatePipeline()
 {
+    scene->render(); 
     auto commandList = dx->commandList;
-    commandList->SetPipelineState(UnlitMat::pso->pipelineStateObject);
-
     // 设定相关的描述符堆  同一时刻，同种类型的描述符堆只能有一个被使用
     ID3D12DescriptorHeap* descriptorHeaps[] = { DX::dx->g_GPU_CBV_SRV_UAV_DescriptorHeap };
     commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
     // 设置根描述符
-    commandList->SetGraphicsRootSignature(UnlitMat::pso->rootSignature); 
+    commandList->SetPipelineState(UnlitMat::pipelineStateObject);
+    commandList->SetGraphicsRootSignature(UnlitMat::rootSignature); 
     // 根描述符 参数0，不使用句柄
     commandList->SetGraphicsRootConstantBufferView(0, cameraBufferRes[dx->frameIndex]->GetGPUVirtualAddress());
     // 根描述符 参数1，不使用句柄
     commandList->SetGraphicsRootConstantBufferView(1, objBufferRes[dx->frameIndex]->GetGPUVirtualAddress());
-
-    
+/*
+    for(int i=0; i<scene->meshs.size(); i++)
+    {
+        scene->meshs[i]->mat->name
+    }
+    */
 
     // draw
     tri->draw();

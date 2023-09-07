@@ -2,8 +2,9 @@
 #include "Sample.h"
 #include "Camera.h"
 #include "Transform.h"
-#include "Mesh.h"
+#include "core/Mesh.h"
 #include "Shader.h"
+#include "core/Scene.h"
 
 #include "DX.h"
 
@@ -31,6 +32,7 @@ struct Vertex {
 class Traingle : public Sample
 {
 public:
+    Scene* scene;
     Camera* camera;
 
     Mesh* quad;
