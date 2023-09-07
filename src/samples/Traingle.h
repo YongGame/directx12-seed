@@ -12,13 +12,13 @@ class Texture;
 using namespace DirectX;
 
 // this is the structure of our constant buffer.
-struct ConstantBuffer {
-    XMFLOAT4 colorMultiplier;
+struct ConstantBufferPerObject {
+    XMFLOAT4X4 modelMat;
 };
 
-// this is the structure of our constant buffer.
-struct ConstantBufferPerObject {
-    XMFLOAT4X4 wvpMat;
+struct CameraConstantBuffer{
+    XMFLOAT4X4 projMat;
+    XMFLOAT4X4 viewMat;
 };
 
 struct Vertex {
@@ -36,9 +36,6 @@ public:
     Mesh* quad;
     Mesh* tri;
     Shader* shader;
-
-    ID3D12PipelineState* pipelineStateObject;
-    ID3D12RootSignature* rootSignature;
     
     int CBV_SRV_UAV_DescriptorSize;
     ID3D12DescriptorHeap* CBV_SRV_UAV_DescriptorHeap; 
@@ -46,8 +43,7 @@ public:
     // frameBufferCount = 3
     ID3D12Resource* constantBufferUploadHeap[3]; // this is the memory on the gpu where our constant buffer will be placed.
     UINT8* cbColorMultiplierGPUAddress[3]; // this is a pointer to the memory location we get when we map our constant buffer
-    ConstantBuffer cbColorMultiplierData; // this is the constant buffer data we will send to the gpu 
-                                        // (which will be placed in the resource we created above)
+    CameraConstantBuffer cameraBufferData;
 
 
     // Constant buffers must be 256-byte aligned which has to do with constant reads on the GPU.
@@ -77,9 +73,7 @@ public:
     virtual void Update();
     virtual void UpdatePipeline();
     virtual void resize();
-
-    void initRootSignature();
-    void initPSO();
+    
     void initMesh();
     void initCBV();
 };

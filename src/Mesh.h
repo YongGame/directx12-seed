@@ -1,6 +1,6 @@
 #pragma once
 #include "Geometry.h"
-#include "Material.h"
+#include "mat/Material.h"
 #include "Transform.h"
 
 class Mesh

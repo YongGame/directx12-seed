@@ -13,7 +13,7 @@ Camera::Camera(int w, int h)
     XMVECTOR cPos = XMLoadFloat4(&cameraPosition);
     XMVECTOR cTarg = XMLoadFloat4(&cameraTarget);
     XMVECTOR cUp = XMLoadFloat4(&cameraUp);
-    XMMATRIX tmpMat = XMMatrixLookAtLH(cPos, cTarg, cUp);
+    XMMATRIX tmpMat = XMMatrixLookAtLH(cPos, cTarg, cUp); // 直接获取视图矩阵
     XMStoreFloat4x4(&cameraViewMat, tmpMat);
 }
 
