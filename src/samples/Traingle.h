@@ -38,8 +38,8 @@ public:
     Shader* shader;
 
     // frameBufferCount = 3
-    ID3D12Resource* constantBufferUploadHeap[3]; // this is the memory on the gpu where our constant buffer will be placed.
-    UINT8* cbColorMultiplierGPUAddress[3]; // this is a pointer to the memory location we get when we map our constant buffer
+    ID3D12Resource* cameraBufferRes[3]; // this is the memory on the gpu where our constant buffer will be placed.
+    UINT8* cameraBufferResAddress[3]; // this is a pointer to the memory location we get when we map our constant buffer
     CameraConstantBuffer cameraBufferData;
 
 
@@ -57,9 +57,9 @@ public:
     ConstantBufferPerObject cbPerObject; // this is the constant buffer data we will send to the gpu 
                                             // (which will be placed in the resource we created above)
 
-    ID3D12Resource* constantBufferUploadHeaps[3]; // this is the memory on the gpu where constant buffers for each frame will be placed
+    ID3D12Resource* objBufferRes[3]; // this is the memory on the gpu where constant buffers for each frame will be placed
 
-    UINT8* cbvGPUAddress[3]; // this is a pointer to each of the constant buffer resource heaps
+    UINT8* objBufferResAddress[3]; // this is a pointer to each of the constant buffer resource heaps
 
     virtual void init();
     virtual void Update();
