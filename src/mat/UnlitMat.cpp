@@ -2,16 +2,13 @@
 #include "Shader.h"
 #include "DX.h"
 
-ID3D12RootSignature* UnlitMat::rootSignature = nullptr;
-ID3D12PipelineState* UnlitMat::pipelineStateObject = nullptr;
-
 UnlitMat::UnlitMat(LPCWSTR filename)
 {
     name = "UnlitMat";
 
     diffuse = new Texture(L"D://cc/directx12-seed/assets/braynzar.jpg");
 
-    if(!pipelineStateObject) initPSO();
+    initPSO();
 }
 
 void UnlitMat::apply()
@@ -24,6 +21,10 @@ void UnlitMat::apply()
 
 void UnlitMat::initPSO()
 {
+    pso = PSO::get(name);
+
+    if(pso->pipelineStateObject) return;
+    
     // create RootSignature
     // 根参数
     D3D12_ROOT_PARAMETER  rootParameters[3];
@@ -84,44 +85,9 @@ void UnlitMat::initPSO()
         D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
         D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS);
 
-    ID3DBlob* errorBuff; // a buffer holding the error data if any
-    ID3DBlob* signature;
-    ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &errorBuff));
-    ThrowIfFailed(DX::dx->device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
-
-
-    // create PSO
     Shader* shader = new Shader();
     shader->setVertexShader(L"D://cc/directx12-seed/assets/VertexShader.hlsl");
     shader->setPixelShader(L"D://cc/directx12-seed/assets/PixelShader.hlsl");
 
-    D3D12_INPUT_ELEMENT_DESC inputLayout[] =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-    };
-    D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
-    inputLayoutDesc.NumElements = sizeof(inputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC);
-    inputLayoutDesc.pInputElementDescs = inputLayout;
-
-    DXGI_SAMPLE_DESC sampleDesc{};
-    sampleDesc.Count = 1; // 需要和 swapChain的 SampleDesc.Count 保持一致。
-
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {}; // a structure to define a pso
-    psoDesc.InputLayout = inputLayoutDesc; // the structure describing our input layout
-    psoDesc.pRootSignature = rootSignature; // the root signature that describes the input data this pso needs
-    psoDesc.VS = shader->vertexShaderBytecode; // structure describing where to find the vertex shader bytecode and how large it is
-    psoDesc.PS = shader->pixelShaderBytecode; // same as VS but for pixel shader
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; // type of topology we are drawing
-    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM; // format of the render target
-    psoDesc.SampleDesc = sampleDesc; // must be the same sample description as the swapchain and depth/stencil buffer
-    psoDesc.SampleMask = 0xffffffff; // sample mask has to do with multi-sampling. 0xffffffff means point sampling is done
-    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT); // a default rasterizer state.
-    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT); // a default blent state.
-    psoDesc.NumRenderTargets = 1; // we are only binding one render target
-    psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT); // a default depth stencil state
-    psoDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
-
-    DX::dx->device->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineStateObject));
+    pso->build(shader, rootSignatureDesc);
 }

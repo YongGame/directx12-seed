@@ -1,12 +1,14 @@
 #pragma once
 #include <string>
 #include <d3dx12.h>
+#include "core/PSO.h"
 
 class Material
 {
 public:
     std::string name;
-    ID3D12PipelineState* pipelineStateObject;
+    
+    PSO* pso{nullptr};
 
     virtual void apply()=0;
 };
