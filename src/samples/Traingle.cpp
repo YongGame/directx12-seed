@@ -152,25 +152,19 @@ void Traingle::Update()
 void Traingle::UpdatePipeline()
 {
     scene->render(); 
-    
+
     auto commandList = dx->commandList;
     // 设定相关的描述符堆  同一时刻，同种类型的描述符堆只能有一个被使用
     ID3D12DescriptorHeap* descriptorHeaps[] = { DX::dx->g_GPU_CBV_SRV_UAV_DescriptorHeap };
     commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
     // 设置根描述符
-    commandList->SetPipelineState(tri->mat->pso->pipelineStateObject);
-    commandList->SetGraphicsRootSignature(tri->mat->pso->rootSignature); 
+    //commandList->SetPipelineState(tri->mat->pso->pipelineStateObject);
+    //commandList->SetGraphicsRootSignature(tri->mat->pso->rootSignature); 
     // 根描述符 参数0，不使用句柄
     commandList->SetGraphicsRootConstantBufferView(0, cameraBufferRes[dx->frameIndex]->GetGPUVirtualAddress());
     // 根描述符 参数1，不使用句柄
     commandList->SetGraphicsRootConstantBufferView(1, objBufferRes[dx->frameIndex]->GetGPUVirtualAddress());
-/*
-    for(int i=0; i<scene->meshs.size(); i++)
-    {
-        scene->meshs[i]->mat->name
-    }
-    */
 
     // draw
     tri->draw();
