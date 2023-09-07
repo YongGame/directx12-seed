@@ -5,7 +5,7 @@
 #include "core/Mesh.h"
 #include "Shader.h"
 #include "core/Scene.h"
-
+#include "core/Res.h"
 #include "DX.h"
 
 class Texture;
@@ -39,9 +39,7 @@ public:
     Mesh* tri;
     Shader* shader;
 
-    // frameBufferCount = 3
-    ID3D12Resource* cameraBufferRes[3]; // this is the memory on the gpu where our constant buffer will be placed.
-    UINT8* cameraBufferResAddress[3]; // this is a pointer to the memory location we get when we map our constant buffer
+    
     CameraConstantBuffer cameraBufferData;
 
 
@@ -62,6 +60,8 @@ public:
     ID3D12Resource* objBufferRes[3]; // this is the memory on the gpu where constant buffers for each frame will be placed
 
     UINT8* objBufferResAddress[3]; // this is a pointer to each of the constant buffer resource heaps
+
+    Res cameraRes[3];
 
     virtual void init();
     virtual void Update();

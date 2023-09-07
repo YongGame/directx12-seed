@@ -19,42 +19,9 @@ void Traingle::init()
 
 void Traingle::initCBV()
 {
-    // create the constant buffer resource heap
-    // We will update the constant buffer one or more times per frame, so we will use only an upload heap
-    // unlike previously we used an upload heap to upload the vertex and index data, and then copied over
-    // to a default heap. If you plan to use a resource for more than a couple frames, it is usually more
-    // efficient to copy to a default heap where it stays on the gpu. In this case, our constant buffer
-    // will be modified and uploaded at least once per frame, so we only use an upload heap
-
-    // create a resource heap, descriptor heap, and pointer to cbv for each frame
-    
-    for (int i = 0; i < dx->frameBufferCount; ++i)
-    {
-        dx->device->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), // this heap will be used to upload the constant buffer data
-            D3D12_HEAP_FLAG_NONE, // no flags
-            &CD3DX12_RESOURCE_DESC::Buffer(1024 * 64), // size of the resource heap. Must be a multiple of 64KB for single-textures and constant buffers
-            D3D12_RESOURCE_STATE_GENERIC_READ, // will be data that is read from so we keep it in the generic read state
-            nullptr, // we do not have use an optimized clear value for constant buffers
-            IID_PPV_ARGS(&cameraBufferRes[i]));
-        cameraBufferRes[i]->SetName(L"Constant Buffer Upload Resource Heap");
-
-        // 描述符句柄
-        /*CD3DX12_CPU_DESCRIPTOR_HANDLE cbvHandle(CBV_SRV_UAV_DescriptorHeap->GetCPUDescriptorHandleForHeapStart(), i, CBV_SRV_UAV_DescriptorSize);
-        // 资源的类型描述
-        D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-        cbvDesc.BufferLocation = constantBufferUploadHeap[i]->GetGPUVirtualAddress();
-        cbvDesc.SizeInBytes = (sizeof(CameraConstantBuffer) + 255) & ~255;    // CB size is required to be 256-byte aligned.
-        // 将资源关联到描述符句柄
-        dx->device->CreateConstantBufferView(&cbvDesc, cbvHandle);
-        //cbvHandle.Offset(1, CBV_SRV_UAV_DescriptorSize);
-
-        ZeroMemory(&cameraBufferData, sizeof(cameraBufferData));*/
-
-        CD3DX12_RANGE readRange(0, 0);    // We do not intend to read from this resource on the CPU. (End is less than or equal to begin)
-        cameraBufferRes[i]->Map(0, &readRange, reinterpret_cast<void**>(&cameraBufferResAddress[i]));
-        memcpy(cameraBufferResAddress[i], &cameraBufferData, sizeof(cameraBufferData));
-    }
+    cameraRes[0].CreateCommittedResource_UPLOAD(L"cameraCBV", 1024*64);
+    cameraRes[1].CreateCommittedResource_UPLOAD(L"cameraCBV", 1024*64);
+    cameraRes[2].CreateCommittedResource_UPLOAD(L"cameraCBV", 1024*64);
 
 
     for (int i = 0; i < dx->frameBufferCount; ++i)
@@ -128,7 +95,7 @@ void Traingle::Update()
     cameraBufferData.projMat = camera->cameraProjMat;
     cameraBufferData.viewMat = camera->cameraViewMat;
     // copy our ConstantBuffer instance to the mapped constant buffer resource
-    memcpy(cameraBufferResAddress[dx->frameIndex], &cameraBufferData, sizeof(cameraBufferData));
+    memcpy(cameraRes[dx->frameIndex].resAddress, &cameraBufferData, sizeof(cameraBufferData));
 
     tri->trans->rotateAxis(0.0f, 0.0f, 0.01f);
     tri->trans->update();
@@ -162,7 +129,7 @@ void Traingle::UpdatePipeline()
     //commandList->SetPipelineState(tri->mat->pso->pipelineStateObject);
     //commandList->SetGraphicsRootSignature(tri->mat->pso->rootSignature); 
     // 根描述符 参数0，不使用句柄
-    commandList->SetGraphicsRootConstantBufferView(0, cameraBufferRes[dx->frameIndex]->GetGPUVirtualAddress());
+    commandList->SetGraphicsRootConstantBufferView(0, cameraRes[dx->frameIndex].gpuAddress);
     // 根描述符 参数1，不使用句柄
     commandList->SetGraphicsRootConstantBufferView(1, objBufferRes[dx->frameIndex]->GetGPUVirtualAddress());
 
