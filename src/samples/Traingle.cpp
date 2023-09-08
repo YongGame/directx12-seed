@@ -16,21 +16,6 @@ void Traingle::init()
     dx->uploadRes();
 }
 
-void Traingle::initCBV()
-{
-    // 在确定 根签名的时候， 可以确定传入的数据类型
-    cameraRes[0].create(L"cameraCBV", 1024*64);
-    cameraRes[1].create(L"cameraCBV", 1024*64);
-    cameraRes[2].create(L"cameraCBV", 1024*64);
-
-    objsRes.create(L"objsCBV", 1024*64);
-}
-
-void Traingle::resize()
-{
-    camera->resize(dx->width, dx->height);
-}
-
 void Traingle::initMesh()
 {
     std::vector<float> triVertexs = {
@@ -64,6 +49,15 @@ void Traingle::initMesh()
     quad->mat = new UnlitMat(L"D://cc/directx12-seed/assets/braynzar.jpg");
 
     scene->add(quad);
+}
+
+void Traingle::initCBV()
+{
+    cameraRes[0].create(L"cameraCBV", 1024*64);
+    cameraRes[1].create(L"cameraCBV", 1024*64);
+    cameraRes[2].create(L"cameraCBV", 1024*64);
+
+    objsRes.create(L"objsCBV", 1024*64);
 }
 
 void Traingle::Update()
@@ -108,3 +102,9 @@ void Traingle::UpdatePipeline()
     // draw
     quad->draw();
 }
+
+void Traingle::resize()
+{
+    camera->resize(dx->width, dx->height);
+}
+
