@@ -17,7 +17,7 @@ Texture::Texture(LPCWSTR filename)
 	{
 		throw("load error");
 	}
-	res.create(L"TextureRes", textureDesc, imageData, imageBytesPerRow);
+	textureRes.create(L"TextureRes", textureDesc, imageData, imageBytesPerRow);
 }
 
 // load and decode image from file

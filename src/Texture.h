@@ -12,7 +12,7 @@
 class Texture
 {
 public:
-    TextureRes res;
+    TextureRes textureRes;
     
     Texture(LPCWSTR filename);
     int LoadImageDataFromFile(BYTE** imageData, D3D12_RESOURCE_DESC& resourceDescription, LPCWSTR filename, int &bytesPerRow);
