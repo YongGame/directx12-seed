@@ -1,5 +1,5 @@
 #include "TextureRes.h"
-#include "../DX.h"
+#include "core/DX.h"
 
 void TextureRes::create(LPTSTR name, D3D12_RESOURCE_DESC &textureDesc, BYTE *imageData, int imageBytesPerRow)
 {

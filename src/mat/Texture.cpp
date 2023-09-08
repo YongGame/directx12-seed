@@ -1,5 +1,5 @@
 #include "Texture.h"
-#include "DX.h"
+#include "core/DX.h"
 
 Texture::Texture(LPCWSTR filename)
 {

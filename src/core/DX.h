@@ -1,12 +1,10 @@
 #pragma once
 #include <vector>
-#include <unordered_map>
 #include <d3d12.h>
 #include <dxgi1_4.h>
-#include <D3Dcompiler.h>
 #include <DirectXMath.h>
 #include "d3dx12.h"
-#include "Help.h"
+#include "utils/Help.h"
 
 #ifdef _DEBUG
 #define DX12_ENABLE_DEBUG_LAYER

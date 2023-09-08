@@ -1,6 +1,6 @@
 #include "UnlitMat.h"
 #include "Shader.h"
-#include "DX.h"
+#include "core/DX.h"
 
 UnlitMat::UnlitMat(LPCWSTR filename)
 {

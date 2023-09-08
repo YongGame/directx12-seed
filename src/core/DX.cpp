@@ -1,5 +1,5 @@
 #include "dx.h"
-#include "Sample.h"
+#include "samples/Sample.h"
 
 DX* DX::dx = nullptr;
 

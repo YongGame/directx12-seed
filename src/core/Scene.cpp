@@ -1,6 +1,6 @@
 #include "Scene.h"
-#include "PSO.h"
-#include "../DX.h"
+#include "mat/PSO.h"
+#include "core/DX.h"
 
 void Scene::add(Mesh* mesh)
 {

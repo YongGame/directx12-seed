@@ -1,5 +1,5 @@
 #include "IndexBufferRes.h"
-#include "../DX.h"
+#include "core/DX.h"
 
 void IndexBufferRes::create(LPTSTR name, int size, const void *data)
 {

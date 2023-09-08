@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <d3dx12.h>
-#include "core/PSO.h"
+#include "PSO.h"
 
 class Material
 {

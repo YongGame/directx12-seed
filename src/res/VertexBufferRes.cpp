@@ -1,5 +1,5 @@
 #include "VertexBufferRes.h"
-#include "../DX.h"
+#include "core/DX.h"
 
 void VertexBufferRes::create(LPTSTR name, int size, int strideInBytes, const void *data)
 {

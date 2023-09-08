@@ -1,6 +1,6 @@
 #include "PSO.h"
-#include "../DX.h"
-#include "../Shader.h"
+#include "core/DX.h"
+#include "Shader.h"
 
 std::unordered_map<std::string, PSO*> PSO::psos;
 

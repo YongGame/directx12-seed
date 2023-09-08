@@ -1,5 +1,5 @@
 #include "Res.h"
-#include "../DX.h"
+#include "core/DX.h"
 
 void Res::CreateCommittedResource_UPLOAD(LPTSTR name, int size)
 {

@@ -7,7 +7,7 @@
 #include <windows.h>
 #include <string>
 
-#include "DX.h"
+#include "core/DX.h"
 
 // Handle to the window
 HWND hwnd = NULL;

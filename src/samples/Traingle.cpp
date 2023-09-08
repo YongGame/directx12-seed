@@ -1,5 +1,4 @@
 #include "Traingle.h"
-#include "Texture.h"
 #include "mat/UnlitMat.h"
 
 #include <filesystem>

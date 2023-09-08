@@ -1,5 +1,5 @@
 #include "Geometry.h"
-#include "DX.h"
+#include "core/DX.h"
 
 void Geometry::setVertexs(std::vector<float> datas)
 {
