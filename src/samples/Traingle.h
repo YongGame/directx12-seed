@@ -5,7 +5,7 @@
 #include "core/Mesh.h"
 #include "core/Scene.h"
 #include "mat/Shader.h"
-#include "res/Res.h"
+#include "res/ConstantBufferRes.h"
 
 class Texture;
 
@@ -56,8 +56,8 @@ public:
     ConstantBufferPerObject cbPerObject; // this is the constant buffer data we will send to the gpu 
                                             // (which will be placed in the resource we created above)
 
-    Res cameraRes[3];
-    Res objsRes;
+    ConstantBufferRes cameraRes[3];
+    ConstantBufferRes objsRes;
 
     virtual void init();
     virtual void Update();

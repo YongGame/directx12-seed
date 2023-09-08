@@ -6,7 +6,7 @@ UnlitMat::UnlitMat(LPCWSTR filename)
 {
     name = "UnlitMat";
 
-    diffuse = new Texture(L"D://cc/directx12-seed/assets/braynzar.jpg");
+    diffuse = new Texture(filename);
 
     initPSO();
 }
