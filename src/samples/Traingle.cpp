@@ -9,8 +9,8 @@ void Traingle::init()
     scene = new Scene();
     camera = new Camera(dx->width, dx->height);
 
-    initMesh(); // 顶点 索引缓冲，对于静态网格数据，最好从Upload上传至Default，性能最佳，相关上传指令需要记录到cmdList中
-    initCBV(); // 对于每帧都需要更新的，仅使用Upload，不需要上传指令
+    initMesh(); 
+    initCBV(); 
 
     // 执行 buffer tex 初始化涉及的相关指令，从而保证相关资源在使用时处于可访问状态
     dx->uploadRes();
