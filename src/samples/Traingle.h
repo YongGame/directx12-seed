@@ -5,7 +5,7 @@
 #include "core/Mesh.h"
 #include "Shader.h"
 #include "core/Scene.h"
-#include "core/Res.h"
+#include "res/Res.h"
 #include "DX.h"
 
 class Texture;
